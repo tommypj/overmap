@@ -9,8 +9,8 @@ export const PATTERNS = [
   { name: 'drive-path', re: /\b[A-Za-z]:[\\/](?!$)/ },
   { name: 'tailnet-host', re: /\b[\w-]+\.tail[0-9a-f]+\.ts\.net\b/i },
   { name: 'email', re: /[\w.+-]+@[\w-]+\.[\w.-]+/ },
-  { name: 'secret', re: /(?<![A-Za-z0-9])(pcp_[a-z]+_[A-Za-z0-9]{6,}|sk-[A-Za-z0-9_-]{12,}|ghp_[A-Za-z0-9]{20,}|AIza[0-9A-Za-z_-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)/ },
-  { name: 'user-home', re: /[\\/]Users[\\/](?!someone|me|you|user)[A-Za-z]+/ },
+  { name: 'secret', re: /(?<![A-Za-z0-9])(pcp_[a-z]+_[A-Za-z0-9]{6,}|sk-[A-Za-z0-9_-]{12,}|ghp_[A-Za-z0-9]{20,}|AIza[0-9A-Za-z_-]{20,}|GOCSPX-[A-Za-z0-9_-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)|"client_secret"\s*:\s*"[^"]{8,}"/ },
+  { name: 'user-home', re: /[\\/](?:Users|users|home)[\\/](?!(?:someone|me|you|user)(?![A-Za-z]))[A-Za-z]+/ },
 ];
 
 const EXEMPT_EMAIL_DOMAINS = new Set(['example.com', 'example.org']);
@@ -45,7 +45,7 @@ function lineFindings(line, denylist) {
     }
   }
   for (const term of denylist) {
-    if (new RegExp(`\\b${escapeRe(term)}\\b`, 'i').test(line)) out.push('denylist');
+    if (new RegExp(`(?<![\\w])${escapeRe(term)}(?![\\w])`, 'i').test(line)) out.push('denylist');
   }
   return out;
 }

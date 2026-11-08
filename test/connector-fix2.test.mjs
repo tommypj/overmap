@@ -56,7 +56,7 @@ test('maskText: new query params, JSON-ish values and header echoes', () => {
     ['token=STARTVALUE123 and more', 'STARTVALUE123'],
     ['{"access_token":"AT12345678","x":1}', 'AT12345678'],
     ['{ "Password" : "hunter2hunter2" }', 'hunter2hunter2'],
-    ['{"client_secret": "CSV12345678"}', 'CSV12345678'],
+    ['{"client_secret": "CSV12345678"}', 'CSV12345678'], // privacy-ok
     ['sent X-API-Key: KEY1234567890 to server', 'KEY1234567890'],
     ['Set-Cookie: session=abcdef123456; Path=/', 'abcdef123456'],
     ['api-key: APIK1234567', 'APIK1234567'],
