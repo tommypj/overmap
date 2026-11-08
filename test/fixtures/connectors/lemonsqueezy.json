@@ -1,0 +1,36 @@
+{
+  "_source": "docs: https://docs.lemonsqueezy.com/api-reference/orders, https://docs.lemonsqueezy.com/api-reference/subscriptions, https://docs.lemonsqueezy.com/api-reference/stores (JSON:API; amounts in cents of the store currency; pagination via links.next)",
+  "stores": {
+    "meta": { "page": { "currentPage": 1, "from": 1, "lastPage": 1, "perPage": 10, "to": 1, "total": 1 } },
+    "jsonapi": { "version": "1.0" },
+    "links": { "first": "https://api.lemonsqueezy.com/v1/stores?page%5Bnumber%5D=1", "last": "https://api.lemonsqueezy.com/v1/stores?page%5Bnumber%5D=1" },
+    "data": [
+      { "type": "stores", "id": "1", "attributes": { "name": "My Store", "slug": "my-store", "currency": "EUR", "total_sales": 3, "plan": "fresh" } }
+    ]
+  },
+  "ordersPage1": {
+    "meta": { "page": { "currentPage": 1, "lastPage": 2, "perPage": 100, "total": 4 } },
+    "links": { "first": "https://api.lemonsqueezy.com/v1/orders?page%5Bnumber%5D=1", "next": "https://api.lemonsqueezy.com/v1/orders?filter%5Bstore_id%5D=1&page%5Bnumber%5D=2&page%5Bsize%5D=100&sort=-created_at" },
+    "data": [
+      { "type": "orders", "id": "1004", "attributes": { "store_id": 1, "status": "paid", "total": 2900, "total_formatted": "€29.00", "user_name": "Ana Pop", "created_at": "2026-10-31T06:30:00.000000Z", "urls": { "receipt": "https://my-store.lemonsqueezy.com/receipt/1004" } } },
+      { "type": "orders", "id": "1003", "attributes": { "store_id": 1, "status": "paid", "total": 1900, "total_formatted": "€19.00", "user_name": "Ion Rus", "created_at": "2026-10-30T15:00:00.000000Z", "urls": { "receipt": null } } }
+    ]
+  },
+  "ordersPage2": {
+    "meta": { "page": { "currentPage": 2, "lastPage": 2, "perPage": 100, "total": 4 } },
+    "links": { "first": "https://api.lemonsqueezy.com/v1/orders?page%5Bnumber%5D=1", "next": null },
+    "data": [
+      { "type": "orders", "id": "1002", "attributes": { "store_id": 1, "status": "paid", "total": 1900, "total_formatted": "€19.00", "user_name": "Maria D", "created_at": "2026-10-10T09:00:00.000000Z", "urls": { "receipt": null } } },
+      { "type": "orders", "id": "1001", "attributes": { "store_id": 1, "status": "refunded", "total": 4900, "total_formatted": "€49.00", "user_name": "Old Buyer", "created_at": "2026-10-09T09:00:00.000000Z", "urls": { "receipt": null } } }
+    ]
+  },
+  "subscriptions": {
+    "meta": { "page": { "currentPage": 1, "lastPage": 1, "perPage": 100, "total": 3 } },
+    "links": { "first": "https://api.lemonsqueezy.com/v1/subscriptions?page%5Bnumber%5D=1", "next": null },
+    "data": [
+      { "type": "subscriptions", "id": "501", "attributes": { "store_id": 1, "status": "active", "renews_at": "2026-11-20T00:00:00.000000Z", "user_name": "Ana Pop" } },
+      { "type": "subscriptions", "id": "502", "attributes": { "store_id": 1, "status": "cancelled", "renews_at": "2026-11-02T00:00:00.000000Z", "user_name": "Ion Rus" } },
+      { "type": "subscriptions", "id": "503", "attributes": { "store_id": 1, "status": "active", "renews_at": "2026-11-25T00:00:00.000000Z", "user_name": "Maria D" } }
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "_source": "docs: https://docs.sentry.io/api/events/list-a-projects-issues/ , https://docs.sentry.io/api/organizations/retrieve-event-counts-for-an-organization-v2/ , https://docs.sentry.io/api/organizations/list-your-organizations/ , https://docs.sentry.io/api/organizations/list-an-organizations-projects/",
+  "issues": [
+    { "id": "4001", "title": "TypeError: x is undefined", "permalink": "https://sentry.io/organizations/acme/issues/4001/", "firstSeen": "2026-10-31T07:00:00.000Z", "lastSeen": "2026-10-31T09:50:00.000Z", "count": "12", "status": "unresolved", "project": { "id": "77", "slug": "web", "name": "web" } },
+    { "id": "3990", "title": "Old known error", "permalink": "https://sentry.io/organizations/acme/issues/3990/", "firstSeen": "2026-10-01T07:00:00.000Z", "lastSeen": "2026-10-31T09:00:00.000Z", "count": "300", "status": "unresolved", "project": { "id": "77", "slug": "web", "name": "web" } }
+  ],
+  "stats": {
+    "start": "2026-10-29T00:00:00Z",
+    "end": "2026-11-01T00:00:00Z",
+    "intervals": ["2026-10-29T00:00:00Z", "2026-10-30T00:00:00Z", "2026-10-31T00:00:00Z"],
+    "groups": [
+      { "by": { "category": "error" }, "totals": { "sum(quantity)": 60 }, "series": { "sum(quantity)": [10, 20, 30] } }
+    ]
+  },
+  "orgs": [{ "id": "1", "slug": "acme", "name": "Acme" }],
+  "projects": [{ "id": "77", "slug": "web", "name": "Web" }, { "id": "78", "slug": "api", "name": "API" }]
+}

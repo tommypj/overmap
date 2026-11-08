@@ -1,0 +1,21 @@
+{
+  "_source": "docs: https://vercel.com/docs/rest-api/reference/endpoints/deployments/list-deployments (GET /v6/deployments; created is epoch ms, url has no scheme) and https://vercel.com/docs/rest-api/reference/endpoints/projects/retrieve-a-list-of-projects (GET /v9/projects)",
+  "production": {
+    "pagination": { "count": 3, "next": null, "prev": null },
+    "deployments": [
+      { "uid": "dpl_old", "name": "demo", "url": "demo-old.vercel.app", "created": 1761800000000, "state": "READY", "target": "production", "meta": { "githubCommitMessage": "old release", "githubCommitSha": "aaa111" } },
+      { "uid": "dpl_new", "name": "demo", "url": "demo-new.vercel.app", "created": 1761900000000, "state": "READY", "target": "production", "meta": { "githubCommitMessage": "fix checkout\n\nlong body", "githubCommitSha": "bbb222" } },
+      { "uid": "dpl_bad", "name": "demo", "url": "demo-bad.vercel.app", "created": 1761880000000, "state": "ERROR", "target": "production", "meta": {} }
+    ]
+  },
+  "preview": {
+    "pagination": { "count": 1, "next": null, "prev": null },
+    "deployments": [
+      { "uid": "dpl_prev", "name": "demo", "url": "demo-git-feat.vercel.app", "created": 1761910000000, "state": "BUILDING", "target": null, "meta": { "githubCommitMessage": "wip", "githubCommitSha": "ccc333" } }
+    ]
+  },
+  "projects": {
+    "projects": [{ "id": "prj_1", "name": "demo", "framework": "nextjs" }, { "id": "prj_2", "name": "other", "framework": null }],
+    "pagination": { "count": 2, "next": null, "prev": null }
+  }
+}

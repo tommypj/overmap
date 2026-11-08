@@ -1,0 +1,19 @@
+{
+  "_source": "docs: https://developers.google.com/webmaster-tools/v1/searchanalytics/query , https://developers.google.com/webmaster-tools/v1/sites/list",
+  "byDate": {
+    "rows": [
+      { "keys": ["2026-10-28"], "clicks": 30, "impressions": 1000, "ctr": 0.03, "position": 10 },
+      { "keys": ["2026-10-26"], "clicks": 10, "impressions": 500, "ctr": 0.02, "position": 4 },
+      { "keys": ["2026-10-27"], "clicks": 20, "impressions": 500, "ctr": 0.04, "position": 6 }
+    ],
+    "responseAggregationType": "byProperty"
+  },
+  "byQuery": {
+    "rows": [
+      { "keys": ["terapie online"], "clicks": 40, "impressions": 900, "ctr": 0.044, "position": 3.26 },
+      { "keys": ["psiholog cluj"], "clicks": 20, "impressions": 1100, "ctr": 0.018, "position": 8.04 }
+    ],
+    "responseAggregationType": "byProperty"
+  },
+  "sites": { "siteEntry": [{ "siteUrl": "sc-domain:example.com", "permissionLevel": "siteOwner" }, { "siteUrl": "https://www.example.org/", "permissionLevel": "siteFullUser" }] }
+}

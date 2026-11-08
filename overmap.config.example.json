@@ -1,0 +1,8 @@
+{
+  "vaultProjectsDir": "/vault/Projects",
+  "mocFile": "/vault/Projects MOC.md",
+  "allowedLogin": "",
+  "port": 3210,
+  "architectureFile": "/projects/ARCHITECTURE.md",
+  "memoryRoot": "/u/someone/.claude/projects"
+}

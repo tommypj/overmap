@@ -1,0 +1,27 @@
+{
+  "_source": "docs: https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/properties/runReport , https://developers.google.com/analytics/devguides/config/admin/v1/rest/v1beta/accountSummaries/list",
+  "byDate": {
+    "dimensionHeaders": [{ "name": "date" }],
+    "metricHeaders": [{ "name": "activeUsers", "type": "TYPE_INTEGER" }, { "name": "sessions", "type": "TYPE_INTEGER" }],
+    "rows": [
+      { "dimensionValues": [{ "value": "20261028" }], "metricValues": [{ "value": "12" }, { "value": "15" }] },
+      { "dimensionValues": [{ "value": "20261026" }], "metricValues": [{ "value": "8" }, { "value": "9" }] },
+      { "dimensionValues": [{ "value": "20261027" }], "metricValues": [{ "value": "10" }, { "value": "11" }] }
+    ],
+    "rowCount": 3
+  },
+  "byPage": {
+    "dimensionHeaders": [{ "name": "pagePath" }],
+    "metricHeaders": [{ "name": "screenPageViews", "type": "TYPE_INTEGER" }],
+    "rows": [
+      { "dimensionValues": [{ "value": "/" }], "metricValues": [{ "value": "50" }] },
+      { "dimensionValues": [{ "value": "/pricing" }], "metricValues": [{ "value": "20" }] }
+    ],
+    "rowCount": 2
+  },
+  "accountSummaries": {
+    "accountSummaries": [
+      { "name": "accountSummaries/100", "account": "accounts/100", "displayName": "Acme", "propertySummaries": [{ "property": "properties/123456", "displayName": "Acme web" }] }
+    ]
+  }
+}

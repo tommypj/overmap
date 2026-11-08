@@ -1,0 +1,203 @@
+// Cockpit server: read-only API + static web on 127.0.0.1; Tailscale serve proxies it to the tailnet.
+// Also owns the rescan schedule (15 min light, daily 04:00 full, never overlapping).
+import { createServer } from 'node:http';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { readFileSync, statSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { loadConfig } from './lib/config.mjs';
+import { openDb } from './lib/db.mjs';
+import { createHandler } from './server/router.mjs';
+import { createRoutes } from './server/api.mjs';
+import { CONNECTORS } from './connectors/index.mjs';
+import { runConnector, EVERY_MS } from './lib/connector.mjs';
+import { fetchJson } from './lib/http.mjs';
+import { getSecret } from './lib/secrets.mjs';
+import { loadRegistry } from './registry.mjs';
+
+const HERE = fileURLToPath(new URL('.', import.meta.url));
+
+export function createApp(config, env = process.env, extra = {}) {
+  const port = Number(env.DASH_PORT) || config.port || 3210;
+  const routes = createRoutes({ config, env, ...extra });
+  const server = createServer(createHandler({ config, port, routes }));
+  server.on('close', routes.close);
+  server.on('close', () => { routes.runner.stopAll(); }); // no orphaned children when the server goes down
+  return server;
+}
+
+export function startScheduler(env = process.env, { run = promisify(execFile), setIntervalFn = setInterval, setTimeoutFn = setTimeout } = {}) {
+  const dataFile = resolve(HERE, env.DASH_DATA ?? 'projects.json');
+  let running = false;
+  let queued = false, queuedFull = false; // a scan asked for during a run: one more follows it
+  let db = null;
+
+  function record() {
+    try {
+      const d = JSON.parse(readFileSync(dataFile, 'utf8'));
+      db ??= openDb(env.DASH_DB ? resolve(HERE, env.DASH_DB) : undefined);
+      db.prepare('INSERT INTO scan_runs(at, seconds, projects) VALUES (?, ?, ?)').run(d.generatedAt, d.scanSeconds ?? null, d.projects?.length ?? 0);
+    } catch (e) {
+      console.error('scan_runs record failed:', e.message);
+    }
+  }
+
+  async function scan(full) {
+    if (running) { queued = true; queuedFull ||= !!full; return; }
+    running = true;
+    try {
+      let f = full;
+      for (;;) {
+        await scanOnce(f);
+        if (!queued) break;
+        f = queuedFull; queued = false; queuedFull = false;
+      }
+    } finally {
+      running = false;
+    }
+  }
+
+  async function scanOnce(full) {
+    const args = ['scan.mjs', ...(full ? [] : ['--no-size']), '--quiet'];
+    try {
+      await run('node', args, { cwd: HERE, windowsHide: true, timeout: 15 * 60 * 1000, killSignal: 'SIGKILL' });
+      record();
+    } catch (err) {
+      console.error(`scan ${full ? 'full' : 'light'} failed:`, err.message);
+    }
+  }
+
+  const timers = [setIntervalFn(() => scan(false), 15 * 60_000)];
+
+  // Daily full scan at 04:00 local.
+  function armDaily() {
+    const next = new Date();
+    next.setHours(4, 0, 0, 0);
+    if (next.getTime() <= Date.now()) next.setDate(next.getDate() + 1);
+    timers.push(setTimeoutFn(() => { scan(true); armDaily(); }, next.getTime() - Date.now()));
+  }
+  armDaily();
+
+  try {
+    if (Date.now() - statSync(dataFile).mtimeMs > 20 * 60_000) timers.push(setTimeoutFn(() => scan(false), 30_000));
+  } catch {
+    timers.push(setTimeoutFn(() => scan(false), 30_000));
+  }
+  for (const t of timers) t?.unref?.();
+  return { scan, isRunning: () => running, stop: () => timers.forEach((t) => { clearInterval(t); clearTimeout(t); }) };
+}
+
+// Connector scheduler: one timer per connector, first run 60 s after start (5 s apart), targets serial,
+// a connector never overlaps itself. Failures are recorded by runConnector; nothing here can crash the server.
+export function startConnectorScheduler(env = process.env, {
+  connectors = CONNECTORS, setIntervalFn = setInterval, setTimeoutFn = setTimeout,
+  secret = getSecret, fetchJsonImpl = fetchJson, now = Date.now, db: injectedDb = null,
+} = {}) {
+  const dataFile = resolve(HERE, env.DASH_DATA ?? 'projects.json');
+  const registryFile = resolve(HERE, env.DASH_REGISTRY ?? 'registry.json');
+  const running = new Set();
+  const timers = [];
+  let db = injectedDb;
+  const ownsDb = injectedDb === null;
+
+  async function tick(conn) {
+    if (running.has(conn.id)) return;
+    running.add(conn.id);
+    try {
+      db ??= openDb(env.DASH_DB ? resolve(HERE, env.DASH_DB) : undefined);
+      let registry;
+      try { registry = loadRegistry(registryFile); } catch { registry = new Map(); }
+      let projectsJson = {};
+      try { projectsJson = JSON.parse(readFileSync(dataFile, 'utf8')); } catch { /* no scan yet */ }
+      const ctx = { getSecret: secret, fetchJson: fetchJsonImpl, now };
+      for (const target of conn.targets(registry, projectsJson)) {
+        try { await runConnector(conn, target, ctx, db); } catch (e) { console.error(`connector ${conn.id}/${target.project}:`, e.message); }
+      }
+    } catch (e) {
+      console.error(`connector ${conn.id} failed:`, e.message);
+    } finally {
+      running.delete(conn.id);
+    }
+  }
+
+  connectors.forEach((conn, i) => {
+    if (!EVERY_MS[conn.every]) { console.error(`connector ${conn.id}: unknown cadence ${conn.every}, skipped`); return; }
+    const first = setTimeoutFn(() => {
+      tick(conn);
+      const t = setIntervalFn(() => tick(conn), EVERY_MS[conn.every]);
+      t?.unref?.();
+      timers.push(t);
+    }, 60_000 + i * 5_000);
+    first?.unref?.();
+    timers.push(first);
+  });
+  return { tick, isRunning: (id) => running.has(id), stop: () => { timers.forEach((t) => { clearInterval(t); clearTimeout(t); }); if (ownsDb && db) { try { db.close(); } catch { /* closed */ } db = null; } } };
+}
+
+async function portOwner(port) {
+  try {
+    const { stdout } = await promisify(execFile)('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+      `(Get-NetTCPConnection -State Listen -LocalPort ${Number(port)} -ErrorAction Stop | Select-Object -First 1).OwningProcess`],
+    { timeout: 10000, windowsHide: true });
+    const pid = stdout.trim();
+    return /^\d+$/.test(pid) ? pid : null;
+  } catch { return null; }
+}
+
+// Command line of a PID, or null. Used to decide whether the port owner is an older copy of this server.
+async function commandLineOf(pid) {
+  try {
+    const { stdout } = await promisify(execFile)('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+      `(Get-CimInstance Win32_Process -Filter "ProcessId=${Number(pid)}").CommandLine`], { timeout: 10000, windowsHide: true });
+    return stdout.trim() || null;
+  } catch { return null; }
+}
+
+// True when the command line is this same serve.mjs from this folder (an older instance left behind
+// because the scheduled task's PowerShell wrapper was stopped without its node child).
+export function isOlderSelf(cmdLine, here = HERE) {
+  if (!cmdLine) return false;
+  const norm = (s) => s.replace(/\\/g, '/').toLowerCase();
+  return norm(cmdLine).includes(norm(resolve(here, 'serve.mjs')));
+}
+
+export function startServer(env = process.env, { onError, ownerOf = portOwner, cmdLineOf = commandLineOf, kill = (pid) => process.kill(pid) } = {}) {
+  const config = loadConfig();
+  const port = Number(env.DASH_PORT) || config.port || 3210;
+  const scheduler = env.DASH_NO_SCHEDULE !== '1' ? startScheduler(env) : null;
+  const server = createApp(config, env, scheduler ? { rescan: (full) => scheduler.scan(full), isScanning: () => scheduler.isRunning() } : {});
+  if (scheduler) server.on('close', scheduler.stop);
+  let tookOver = false;
+  server.on('error', async (err) => {
+    if (err.code === 'EADDRINUSE' && !tookOver) {
+      const owner = await ownerOf(port);
+      const cmd = owner ? await cmdLineOf(owner) : null;
+      if (owner && isOlderSelf(cmd)) {
+        // Take the port over from the older copy of ourselves, then listen once more.
+        tookOver = true;
+        console.error(`port ${port} held by an older serve.mjs (PID ${owner}); replacing it`);
+        try { kill(Number(owner)); } catch { /* already gone */ }
+        setTimeout(() => server.listen(port, '127.0.0.1'), 1500);
+        return;
+      }
+      const msg = `port ${port} in use (PID ${owner ?? 'unknown'}): not this server, refusing to start`;
+      console.error(msg);
+      if (onError) onError(err, msg); else process.exit(2);
+      return;
+    }
+    const msg = `server error: ${err.message}`;
+    console.error(msg);
+    if (onError) onError(err, msg); else process.exit(2);
+  });
+  server.listen(port, '127.0.0.1', () => console.log(`dashboard on http://127.0.0.1:${port}`));
+  if (env.DASH_NO_SCHEDULE !== '1') {
+    const cs = startConnectorScheduler(env);
+    server.on('close', cs.stop);
+  }
+  return server;
+}
+
+if (process.argv[1] && resolve(process.argv[1]).toLowerCase() === resolve(fileURLToPath(import.meta.url)).toLowerCase()) {
+  startServer();
+}
