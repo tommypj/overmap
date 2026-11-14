@@ -14,7 +14,8 @@ export function loadRegistry(file) {
     homes.set(key, id);
     const kind = e.kind ?? 'project';
     if (!KINDS.has(kind)) throw new Error(`${id}: invalid kind ${kind}`);
-    const repos = e.repos ? e.repos.map(norm) : existsSync(`${home}/.git`) ? [home] : [];
+    // An empty list counts as absent: the notes write repos: [] when they name no repo.
+    const repos = e.repos?.length ? e.repos.map(norm) : existsSync(`${home}/.git`) ? [home] : [];
     map.set(id, {
       id,
       name: e.name ?? id,

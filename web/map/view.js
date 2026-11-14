@@ -251,7 +251,7 @@ export function renderMap(el, ctx, { api: fetchApi = api, storage: given, onSele
       expanded.add(n.label);
       selected = n.label;
       onSelect(selected);
-      changed(null);
+      changed(null, n.label); // focus the first member of the expanded cluster
       return;
     }
     selectedId = n.id;
@@ -262,7 +262,7 @@ export function renderMap(el, ctx, { api: fetchApi = api, storage: given, onSele
   const collapse = (g) => {
     expanded.delete(g);
     if (selected === g) { selected = null; onSelect(null); }
-    changed(null);
+    changed(`group:${g}`); // the group node is back: keep focus on it
   };
   const unpin = (id) => {
     if (!pins.has(id)) return;
@@ -319,7 +319,7 @@ export function renderMap(el, ctx, { api: fetchApi = api, storage: given, onSele
     });
     return g;
   };
-  const drawContent = (focusId) => {
+  const drawContent = (focusId, focusGroup = null) => {
     c.edgeG.replaceChildren();
     c.nodeG.replaceChildren();
     edgeEls = model.edges.map((e) => {
@@ -335,7 +335,8 @@ export function renderMap(el, ctx, { api: fetchApi = api, storage: given, onSele
     placeEdges(edgeEls, positions);
     for (const { n, g } of nodeEls) g.setAttribute('transform', moveTo(positions.get(n.id)));
     markSelected();
-    nodeEls.find((x) => x.n.id === focusId)?.g.focus();
+    const target = nodeEls.find((x) => x.n.id === focusId) ?? nodeEls.find((x) => focusGroup && x.n.group === focusGroup);
+    target?.g.focus();
   };
   const toolbar = () => {
     const open = [...expanded].filter((g) => data.projects.some((p) => p.group === g)).sort();
@@ -345,11 +346,11 @@ export function renderMap(el, ctx, { api: fetchApi = api, storage: given, onSele
     );
   };
   // Model change: relayout once, then redraw. Pan and zoom are kept.
-  const changed = (focusId = null) => {
+  const changed = (focusId = null, focusGroup = null) => {
     relayout();
     c.svg.setAttribute('viewBox', vb(box));
     if (selectedId && !model.nodes.some((n) => n.id === selectedId)) { selectedId = null; detail.hidden = true; }
-    drawContent(focusId);
+    drawContent(focusId, focusGroup);
     toolbar();
     c.apply();
   };

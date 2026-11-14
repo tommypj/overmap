@@ -108,7 +108,7 @@ function renderPhoneBar(r) {
   phonebar.append(inProject
     ? h('a', { class: 'pback', href: '#/' }, '\u2039 ', p ? p.name : 'Projects', sub)
     : r[0] === 'map' ? h('a', { class: 'pback', href: '#/' }, '\u2039 Overview')
-    : h('a', { class: 'pback', href: '#/' }, r.length ? 'Projects' : 'Cockpit'));
+    : h('a', { class: 'pback', href: '#/' }, r.length ? 'Projects' : 'Overmap'));
   const title = { new: 'New project', audit: 'Actions log', map: 'Map' }[r[0]];
   if (title) phonebar.append(h('span', { class: 'ptb' }, title));
   phonebar.append(h('span', { class: 'pill' }, state.data ? 'refreshed ' + ago(state.data.generatedAt) : 'offline'));

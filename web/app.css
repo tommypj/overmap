@@ -356,8 +356,9 @@ pre.out { margin: 0; height: 40vh; overflow: auto; background: #0d1117; color: #
 .map-svg:active { cursor: grabbing; }
 .map-panel { flex: 0 0 280px; min-width: 0; max-height: 560px; overflow: auto; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
 .map-panel[hidden] { display: none; }
-.mapcard { display: grid; gap: 6px; }
-.mapcard h3 { margin: 0; }
+.mapcard { display: grid; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
+.mapcard h3 { margin: 0; min-width: 0; flex: 1 1 auto; }
+.mapcard .btn { flex: none; }
 .mapcard .row { gap: 4px 6px; }
 .mapcard .k { width: 62px; }
 .map-edge { fill: none; stroke: var(--faint); stroke-opacity: .75; }

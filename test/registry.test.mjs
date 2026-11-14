@@ -24,6 +24,12 @@ test('normalises backslashes and fills defaults', () => {
   assert.equal(e.note, null);
   assert.deepEqual(e.connectors, {});
 });
+test('an empty repos list falls back to [home] when .git exists', () => {
+  const d = tmp();
+  mkdirSync(join(d, '.git'));
+  const reg = loadRegistry(writeReg(d, { a: { name: 'A', family: 'F', kind: 'project', home: d, repos: [] } }));
+  assert.deepEqual(reg.get('a').repos, [d.replaceAll(String.fromCharCode(92), '/')]);
+});
 test('defaults repos to [home] when .git exists', () => {
   const d = tmp();
   mkdirSync(join(d, '.git'));
