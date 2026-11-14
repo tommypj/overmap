@@ -1,5 +1,6 @@
 import { GLYPH, deltaByProject, healthClass, readLastVisit, leaveOverview, notePendingVisit, persistPendingVisit, baselineFor, readBaseline, saveBaseline } from '../events.js';
 import { statusPill, h, api, ago, enc, pill, unknownPill, riskCount, isParked, lastWork, isPhone } from '../ui.js';
+import { renderMap, selectedGroup } from '../map/view.js';
 
 // Totals across the main working trees of all repos. Unknown parts are named, never counted as zero.
 export function repoTotals(p) {
@@ -35,6 +36,17 @@ function flagsCell(p) {
   return wrap;
 }
 
+// Phone list: hide rows outside the selected cluster, and headings left with no visible rows.
+function filterPhone(el, group) {
+  let head = null, shown = 0;
+  const close = () => { if (head) head.hidden = shown === 0; };
+  for (const c of el.children) {
+    if (c.classList.contains('pgrp')) { close(); head = c; shown = 0; }
+    else if (c.classList.contains('prow')) { c.hidden = !!group && c.dataset.group !== group; if (!c.hidden) shown++; }
+  }
+  close();
+}
+
 function phoneRow(p, sub, risk, dot, delta) {
   return h('a', { class: 'prow', href: '#/p/' + enc(p.id) },
     h('span', { class: 'ptxt' }, h('span', { class: 'pname' }, dot, p.name), h('span', { class: 'age block' }, sub), delta ? h('span', { class: 'age block pdelta' }, delta) : null),
@@ -53,11 +65,15 @@ function renderPhoneList(el, d, ctx, lastVisit) {
     const delta = h('span', { class: 'pdeltatxt' }, '\u2026');
     dotCells.set(p.id, dot);
     deltaCells.set(p.id, delta);
-    return phoneRow(p, sub, risk, dot, delta);
+    const a = phoneRow(p, sub, risk, dot, delta);
+    a.dataset.group = p.group || '';
+    return a;
   };
   const needs = sorted.filter((p) => riskCount(p) > 0);
   const group = (title, list, cls) => list.length ? [h('div', { class: 'pgrp' + (cls ? ' ' + cls : '') }, title), ...list] : [];
   el.append(h('div', { class: 'row between' }, h('h1', { class: 'ptitle' }, 'Projects'), h('a', { class: 'btn primary', href: '#/new' }, 'New project')));
+  const phoneMap = h('section', { class: 'map-section' });
+  el.append(phoneMap);
   el.append(...group('Needs attention', needs.map((p) => row(p, (p.attention || [])[0]?.text || lastText(p), riskCount(p))), 'attn'));
   const fams = new Map();
   for (const p of sorted.filter((x) => riskCount(x) === 0)) {
@@ -66,6 +82,8 @@ function renderPhoneList(el, d, ctx, lastVisit) {
     fams.get(g).push(row(p, lastText(p), 0));
   }
   for (const [g, list] of [...fams.entries()].sort((a, b) => a[0].localeCompare(b[0]))) el.append(...group(g, list));
+  renderMap(phoneMap, ctx, { onSelect: (g) => filterPhone(el, g) });
+  filterPhone(el, selectedGroup());
   const nameOf = (id) => d.projects.find((x) => x.id === id)?.name ?? id;
   const deltaNote = h('p', { class: 'age pdeltanote' }, deltaNoteText(lastVisit));
   el.insertBefore(deltaNote, el.children[1] ?? null);
@@ -162,6 +180,8 @@ export async function renderOverview(el, ctx) {
   const active = d.projects.filter((p) => !isParked(p));
   const needs = active.filter((p) => riskCount(p) > 0).length;
   el.append(h('p', { class: 'headline' }, `scanned ${ago(d.generatedAt)} · ${active.length} projects · ${needs} need attention`));
+  const mapEl = h('section', { class: 'map-section' });
+  el.append(mapEl);
 
   const rank = (p) => (lastWork(p).at ?? 0);
   const rows = [...active].sort((a, b) => riskCount(b) - riskCount(a) || rank(b) - rank(a) || a.name.localeCompare(b.name));
@@ -174,7 +194,7 @@ export async function renderOverview(el, ctx) {
     dotCells.set(p.id, dot);
     const delta = h('td', { class: 'delta' }, '…');
     deltaCells.set(p.id, delta);
-    tbody.append(h('tr', null,
+    tbody.append(h('tr', { 'data-group': p.group || '' },
       h('td', null, dot, h('a', { href: '#/p/' + enc(p.id) }, p.name), h('span', { class: 'age block' }, p.kind === 'project' ? p.group : p.kind)),
       h('td', null, statusPill(p.status)),
       h('td', null, flagsCell(p)),
@@ -182,6 +202,10 @@ export async function renderOverview(el, ctx) {
       h('td', null, totalsCell(p)),
       delta));
   }
+  // The map filters this table to the selected cluster (no selection = all rows).
+  const filterTable = (group) => { for (const tr of tbody.rows) tr.hidden = !!group && tr.dataset.group !== group; };
+  renderMap(mapEl, ctx, { onSelect: filterTable });
+  filterTable(selectedGroup());
   el.append(h('div', { class: 'tablewrap' }, h('table', { class: 'grid-table' },
     h('thead', null, h('tr', null, ...['Project', 'Status', 'Attention', 'Last work', 'Repos', 'Since you last looked'].map((t) => h('th', null, t)))), tbody)));
 

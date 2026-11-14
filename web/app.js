@@ -5,6 +5,7 @@ import { renderProject } from './pages/project.js';
 import { renderSettings } from './pages/settings.js';
 import { renderNewProject } from './pages/newproject.js';
 import { renderAudit } from './pages/audit.js';
+import { renderProjectGraph } from './map/view.js';
 
 const side = document.getElementById('side');
 const main = document.getElementById('main');
@@ -64,10 +65,10 @@ function collapsible(key, title, items) {
 
 function renderSide(route) {
   clear(side);
-  const cur = route[0] === 'p' ? route[1] : null;
+  const cur = route[0] === 'p' || route[0] === 'map' ? route[1] : null;
   side.append(h('div', { class: 'brand' }, h('a', { href: '#/' }, 'Overmap')));
   if (state.fresh) side.append(newScanButton());
-  side.append(h('a', { class: 'navitem' + (route.length === 0 ? ' on' : ''), href: '#/' }, 'Overview'));
+  side.append(h('a', { class: 'navitem' + (route.length === 0 || route[0] === 'map' ? ' on' : ''), href: '#/' }, 'Overview'));
   if (!state.data) {
     side.append(h('p', { class: 'muted pad' }, state.error ? `unknown (${state.error})` : 'Loading...'));
     return;
@@ -106,8 +107,9 @@ function renderPhoneBar(r) {
   const sub = inProject && r[2] ? ' \u00b7 ' + ({ dev: 'Dev', files: 'Files', media: 'Media', docs: 'Docs', live: 'Live' }[r[2]] || '') : '';
   phonebar.append(inProject
     ? h('a', { class: 'pback', href: '#/' }, '\u2039 ', p ? p.name : 'Projects', sub)
+    : r[0] === 'map' ? h('a', { class: 'pback', href: '#/' }, '\u2039 Overview')
     : h('a', { class: 'pback', href: '#/' }, r.length ? 'Projects' : 'Cockpit'));
-  const title = { new: 'New project', audit: 'Actions log' }[r[0]];
+  const title = { new: 'New project', audit: 'Actions log', map: 'Map' }[r[0]];
   if (title) phonebar.append(h('span', { class: 'ptb' }, title));
   phonebar.append(h('span', { class: 'pill' }, state.data ? 'refreshed ' + ago(state.data.generatedAt) : 'offline'));
   if (state.fresh) phonebar.append(newScanButton());
@@ -132,6 +134,7 @@ async function route() {
     else if (r[0] === 'settings') await renderSettings(main, ctx);
     else if (r[0] === 'new') await renderNewProject(main, ctx);
     else if (r[0] === 'audit') await renderAudit(main, ctx);
+    else if (r[0] === 'map') await renderProjectGraph(main, ctx, r[1] ?? '', { api });
     else main.append(h('h1', null, 'Not found'), h('p', null, h('a', { href: '#/' }, 'Back to the overview')));
   } catch (e) {
     console.error(e);
@@ -140,6 +143,8 @@ async function route() {
 }
 
 window.addEventListener('hashchange', route);
+// Escape leaves the zoomed-in map for the Overview.
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && parseHash()[0] === 'map') location.hash = '#/'; });
 // Closing or backgrounding the tab on the Overview counts as leaving it (the page may never get another event).
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && onOverview) persistOverviewVisit(); });
 window.addEventListener('pagehide', () => { if (onOverview) persistOverviewVisit(); });
