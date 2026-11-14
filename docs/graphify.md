@@ -42,7 +42,7 @@ On a project's zoomed-in view, the Ask the graph box runs this, and nothing else
 graphify query "<your question>"
 ```
 
-It runs in the project's home folder, with the arguments passed directly and no shell, a 60-second limit, and a 500-character cap on the question. The request needs the same CSRF token and origin check as every other action, and each question is written to the audit log.
+It runs in the project's home folder, with the arguments passed directly and no shell, a 60-second limit, and a question of 1 to 500 characters (no control characters, and nothing that starts with `-`). The request needs the same CSRF token and origin check as every other action, and each question is written to the audit log.
 
 It needs `graphify` on your PATH. On Windows the command must be a real `.exe`. `.cmd` and `.bat` shims are not supported, because Windows runs them through the command interpreter, which would parse the question's characters as commands. If only a shim is installed, Overmap says so and asks you to install an `.exe`.
 

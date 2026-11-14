@@ -13,19 +13,35 @@ Overmap's registry is your notes. Each project is one Markdown note in the folde
 
 ```yaml
 ---
-type: project          # required
-dashboard: true        # required: without it the note is ignored
-name: My App           # optional, defaults to the file name
-status: active         # optional: active, paused, archived or terminated
-group: Client X        # optional: the cluster the project sits in on the map
-path: ~/code/my-app    # required: the project's home folder; ~ is expanded
-repos: [~/code/my-app, ~/code/my-app-wt1]   # optional: more repos or worktrees
-deploy: https://my-app.example               # optional: shown on the Dev tab
-uses: [neon, vercel]   # optional: shared services, drawn as hubs on the map
-connects: [other-app]  # optional: declared links to other projects
-links: [https://my-app.example/docs]  # optional: URLs listed on the project
+type: project
+dashboard: true
+name: My App
+status: active
+group: Client X
+path: ~/code/my-app
+repos: [~/code/my-app, ~/code/my-app-wt1]
+deploy: https://my-app.example
+uses: [neon, vercel]
+connects: [other-app]
+links: [https://my-app.example/docs]
 ---
 ```
+
+| Field | Required | Meaning |
+| --- | --- | --- |
+| `type` | yes | must be `project` |
+| `dashboard` | yes | must be `true`, otherwise the note is ignored |
+| `path` | yes | the project's home folder; `~` is expanded |
+| `name` | no | defaults to the file name |
+| `status` | no | shown as written; use `active`, `paused`, `archived` or `terminated` |
+| `group` | no | the cluster the project sits in on the map |
+| `repos` | no | more repos or worktrees |
+| `deploy` | no | shown on the Dev tab |
+| `uses` | no | shared services, drawn as hubs on the map |
+| `connects` | no | declared links to other projects |
+| `links` | no | URLs listed on the project |
+
+Put comments in the note's body, not after a value: the frontmatter reader does not strip `# ...` text, so a trailing comment becomes part of the value.
 
 `type` and `dashboard` must match exactly. `path` is required; a note without it is skipped. `status` is shown as written, so keep to the four values above to keep the map consistent.
 

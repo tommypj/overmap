@@ -191,7 +191,7 @@ function deployTile(factsRes, runs, connError) {
     body.push(h('dl', { class: 'facts' + (m.state === 'error' ? ' grey' : '') },
       ...dd('Production', deployNode(m.production)), ...dd('Preview', deployNode(m.preview)), ...dd('Failed (24 h)', countNode(m.failed24h))));
   }
-  body.push(h('p', { class: 'muted small' }, 'Railway: Stage 5'));
+  body.push(h('p', { class: 'muted small' }, 'Connect a deployments connector (Vercel is included) to see deployments here.'));
   return tile(section('Deployments', undefined, ...body));
 }
 

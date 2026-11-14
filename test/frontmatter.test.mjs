@@ -1,5 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter.mjs';
 
 const B = String.fromCharCode(92);
@@ -22,4 +24,19 @@ test('serializeFrontmatter round-trips control chars and punctuation', () => {
   assert.equal(out.data.a, nl);
   assert.equal(out.data.b, odd);
   assert.deepEqual(Object.keys(out.data), ['a', 'b']);
+});
+
+// docs/notes.md is the public contract for a project note: its template must parse with the same reader make-registry uses.
+test('the frontmatter template in docs/notes.md parses as a project note', () => {
+  const doc = readFileSync(fileURLToPath(new URL('../docs/notes.md', import.meta.url)), 'utf8').replace(/\r\n/g, '\n');
+  const at = doc.indexOf('## Frontmatter');
+  const open = doc.indexOf('```yaml\n', at);
+  const close = doc.indexOf('\n```', open + 8);
+  assert.ok(at >= 0 && open > at && close > open, 'yaml fence under ## Frontmatter');
+  const yaml = doc.slice(open + '```yaml\n'.length, close);
+  assert.ok(!/ #/.test(yaml), 'no trailing comments in the template');
+  const { data } = parseFrontmatter(yaml + '\n');
+  assert.equal(data.type, 'project');
+  assert.equal(data.dashboard, true);
+  assert.equal(data.path, '~/code/my-app');
 });

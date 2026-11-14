@@ -31,7 +31,7 @@ To use your own projects, build an instance folder and point Overmap at it:
 node make-registry.mjs --home ~/.overmap
 ```
 
-The first run creates `~/.overmap/overmap.config.json`. Set `vaultProjectsDir` to the folder that holds your project notes (see [docs/notes.md](docs/notes.md)), then run the same command again. After that:
+The first run creates `~/.overmap/overmap.config.json`. Set `vaultProjectsDir` to the folder that holds your project notes (see [docs/notes.md](docs/notes.md)), then run the same command again. Until `vaultProjectsDir` in `overmap.config.json` points at a folder that exists, `make-registry.mjs` reports an error and exits. That first-run failure is expected, not a bug. After that:
 
 ```
 node scan.mjs --home ~/.overmap
