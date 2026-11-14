@@ -10,6 +10,7 @@ import { norm } from './lib/paths.mjs';
 import { loadRegistry, rootsOf } from './registry.mjs';
 import { writeArchitecture } from './scan/architecture.mjs';
 import { buildProjectSafe } from './scan/project.mjs';
+import { projectEdges } from './scan/edges.mjs';
 import { loadSizeCache, saveSizeCache, mocTable, updateMoc, writeArchitectureFile } from './scan/assemble.mjs';
 
 const SKIP_SIZE = process.argv.includes('--no-size');
@@ -40,7 +41,8 @@ for (const entry of registry.values()) {
 saveSizeCache(join(dataDir, 'size-cache.json'), cache);
 
 const scanSeconds = Math.round((Date.now() - started) / 1000);
-const out = { generatedAt: new Date().toISOString(), scanSeconds, projects };
+const { edges, services } = projectEdges(projects);
+const out = { generatedAt: new Date().toISOString(), scanSeconds, projects, edges, services };
 writeFileSync(join(dataDir, 'projects.json'), JSON.stringify(out, null, 2));
 
 let mocWritten = false;
