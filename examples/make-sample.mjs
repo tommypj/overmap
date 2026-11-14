@@ -1,8 +1,9 @@
-// Builds the invented "Northwind Bikes" sample workspace (examples/sample/) into a folder:
+// Builds the invented "Larkspur Bikes" sample workspace (examples/sample/) into a folder:
 //   <dir>/vault/Projects/*.md   six project notes (path placeholders filled in)
-//   <dir>/projects/<id>/        plans, test results, graphs; api-worker is a git worktree of shop-api
+//   <dir>/projects/<id>/        plans, test results, graphs; each project is a committed git repo with a
+//                               fake origin (no network is ever used); api-worker is a worktree of shop-api
 //   <dir>/home/                 instance folder: overmap.config.json and registry.json
-// Used by serve.mjs --sample and test/sample.test.mjs. Nothing here touches global git config.
+// Used by serve.mjs --sample and test/sample.test.mjs. Git identity is passed per command; global config is untouched.
 import { execFileSync } from 'node:child_process';
 import { cpSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -17,10 +18,9 @@ export const PROJECTS = ['storefront', 'shop-api', 'api-worker', 'mobile-app', '
 const WORKTREE_OF = 'shop-api';
 const WORKTREE = 'api-worker';
 
-// Synchronous git (no shell, no console window). Throws when git fails.
-const runSync = (file, args, opts = {}) => execFileSync(file, args, { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], ...opts });
-
-export async function makeSample(dir, { git = true, run = runSync } = {}) {
+// runSync defaults to execFileSync: synchronous, no shell. Each call gets windowsHide and piped stdio.
+// It is injectable so a caller can record or replace the git commands.
+export async function makeSample(dir, { git = true, runSync = execFileSync } = {}) {
   const vault = join(dir, 'vault');
   const vaultProjectsDir = join(vault, 'Projects');
   const projectsDir = join(dir, 'projects');
@@ -28,18 +28,29 @@ export async function makeSample(dir, { git = true, run = runSync } = {}) {
   for (const d of [vaultProjectsDir, projectsDir, home]) mkdirSync(d, { recursive: true });
 
   const copyProject = (id) => cpSync(join(SAMPLE, id), join(projectsDir, id), { recursive: true });
-  // With git, the worktree folder is created by `git worktree add`, so its files are copied after that.
+  const git_ = (cwd, args) => runSync('git', args, { cwd, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+  const IDENTITY = ['-c', 'user.name=sample', '-c', 'user.email=sample@example.com'];
+  const commitAll = (cwd) => {
+    git_(cwd, ['add', '-A']);
+    git_(cwd, [...IDENTITY, 'commit', '-q', '-m', 'init']);
+  };
+
+  // Static files first. With git, api-worker is left out: `git worktree add` must create its folder.
   for (const id of PROJECTS) if (!(git && id === WORKTREE)) copyProject(id);
 
   if (git) {
     for (const id of PROJECTS) {
       if (id === WORKTREE) continue;
       const cwd = join(projectsDir, id);
-      run('git', ['init', '-q'], { cwd });
-      run('git', ['-c', 'user.name=sample', '-c', 'user.email=sample@example.com', 'commit', '-q', '--allow-empty', '-m', 'init'], { cwd });
+      git_(cwd, ['init', '-q']);
+      commitAll(cwd);
+      git_(cwd, ['remote', 'add', 'origin', `https://example.com/sample/${id}.git`]);
     }
-    run('git', ['-C', join(projectsDir, WORKTREE_OF), 'worktree', 'add', '-q', join(projectsDir, WORKTREE), '-b', 'worker']);
+    const main = join(projectsDir, WORKTREE_OF);
+    git_(main, ['worktree', 'add', '-q', join(projectsDir, WORKTREE), '-b', 'worker']);
+    // The worktree shares shop-api's repository config, so its origin is inherited (one remote).
     copyProject(WORKTREE);
+    commitAll(join(projectsDir, WORKTREE));
   }
 
   for (const id of PROJECTS) {

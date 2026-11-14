@@ -7,7 +7,7 @@ group: Shop
 path: "@PROJECTS@/storefront"
 uses: [vercel, neon, stripe]
 connects: []
-summary: "Customer shop for Northwind Bikes: catalog, cart and checkout."
+summary: "Customer shop for Larkspur Bikes: catalog, cart and checkout."
 ---
 
 # Storefront

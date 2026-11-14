@@ -3,7 +3,7 @@
 import { createServer } from 'node:http';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { mkdtempSync, readFileSync, statSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,7 +17,6 @@ import { CONNECTORS } from './connectors/index.mjs';
 import { runConnector, EVERY_MS } from './lib/connector.mjs';
 import { fetchJson } from './lib/http.mjs';
 import { loadRegistry } from './registry.mjs';
-import { makeSample } from './examples/make-sample.mjs';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 
@@ -93,12 +92,22 @@ export function startScheduler(config, { run = promisify(execFile), setIntervalF
 }
 
 // --sample: a fresh invented workspace in a temp folder, scanned once, then served with the scheduler on (unless noSchedule).
+// The scan scheduler stays on (Rescan works); the connector scheduler is off. The sample folder is removed on exit
+// (best effort) and at once if the build, scan or start fails. make-sample loads only on this path.
 export async function startSample({ port, noSchedule = false, env = process.env } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'overmap-sample-'));
-  const { home } = await makeSample(dir);
-  await promisify(execFile)(process.execPath, ['scan.mjs', '--home', home, '--no-size', '--quiet'], { cwd: HERE, windowsHide: true });
-  console.log(`sample workspace in ${dir}`);
-  return startServer({ home, env, port, noSchedule });
+  const cleanup = () => { try { rmSync(dir, { recursive: true, force: true, maxRetries: 3 }); } catch { /* best effort */ } };
+  process.on('exit', cleanup);
+  try {
+    const { makeSample } = await import('./examples/make-sample.mjs');
+    const { home } = await makeSample(dir);
+    await promisify(execFile)(process.execPath, ['scan.mjs', '--home', home, '--no-size', '--quiet'], { cwd: HERE, windowsHide: true });
+    console.log(`sample workspace in ${dir}`);
+    return startServer({ home, env, port, noSchedule, connectors: false });
+  } catch (e) {
+    cleanup();
+    throw e;
+  }
 }
 
 // Connector scheduler: one timer per connector, first run 60 s after start (5 s apart), targets serial,
@@ -149,7 +158,8 @@ export function startConnectorScheduler(config, {
 }
 
 // Options: home (instance folder), port (overrides config.port), noSchedule (or OVERMAP_NO_SCHEDULE=1).
-export function startServer({ home = resolveHome(), env = process.env, onError, port: portOverride, noSchedule: noScheduleOpt = false } = {}) {
+// connectors: false skips the connector scheduler (the --sample path); startConnectors is injectable for tests.
+export function startServer({ home = resolveHome(), env = process.env, onError, port: portOverride, noSchedule: noScheduleOpt = false, connectors = true, startConnectors = startConnectorScheduler } = {}) {
   const loaded = loadConfig(home);
   const config = portOverride !== undefined ? { ...loaded, port: portOverride } : loaded;
   const port = config.port;
@@ -168,8 +178,8 @@ export function startServer({ home = resolveHome(), env = process.env, onError, 
     config.port = server.address().port;
     console.log(`dashboard on http://127.0.0.1:${config.port}`);
   });
-  if (!noSchedule) {
-    const cs = startConnectorScheduler(config, { secret: secrets.getSecret });
+  if (!noSchedule && connectors) {
+    const cs = startConnectors(config, { secret: secrets.getSecret });
     server.on('close', cs.stop);
   }
   return server;

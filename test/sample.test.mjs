@@ -2,11 +2,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile, execFileSync, spawn, spawnSync } from 'node:child_process';
 import { promisify } from 'node:util';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { once } from 'node:events';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { makeSample } from '../examples/make-sample.mjs';
+import { startServer } from '../serve.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const execFileP = promisify(execFile);
@@ -28,8 +30,13 @@ test('makeSample + scan produces six projects, one repo edge and five graphs', a
     assert.deepEqual(Object.fromEntries(data.projects.map((p) => [p.id, p.plan?.value?.percent])), PLAN_PERCENT);
     const failing = data.projects.filter((p) => p.tests?.value?.failed > 0).map((p) => p.id);
     assert.deepEqual(failing, ['shop-api']);
+    for (const p of data.projects) {
+      const g = p.repos[0].git.value;
+      assert.equal(g.remotes.length, 1, `${p.id}: one remote`);
+      assert.equal(g.modified + g.untracked, 0, `${p.id}: clean tree`);
+    }
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 3 });
   }
 });
 
@@ -44,7 +51,7 @@ test('makeSample with git:false still scans to six projects, with no repo edges'
     assert.equal(data.projects.length, 6);
     assert.equal(data.edges.filter((e) => e.kind === 'repo').length, 0);
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(dir, { recursive: true, force: true, maxRetries: 3 });
   }
 });
 
@@ -84,4 +91,23 @@ test('--sample with --home is an error (exit 2)', () => {
   const r = spawnSync(process.execPath, [join(ROOT, 'serve.mjs'), '--sample', '--home', join(tmpdir(), 'nope')], { cwd: ROOT, windowsHide: true, encoding: 'utf8' });
   assert.equal(r.status, 2);
   assert.match(r.stderr, /--sample cannot be combined with --home/);
+});
+
+test("startServer skips the connector scheduler when connectors is false", async () => {
+  const home = mkdtempSync(join(tmpdir(), "sample-conn-"));
+  writeFileSync(join(home, "overmap.config.json"), JSON.stringify({ vaultProjectsDir: home, port: 0 }));
+  const calls = [];
+  const fake = (...args) => { calls.push(args); return { stop() {} }; };
+  try {
+    const off = startServer({ home, env: {}, port: 0, connectors: false, startConnectors: fake });
+    await once(off, "listening");
+    await new Promise((r) => off.close(r));
+    assert.equal(calls.length, 0);
+    const on = startServer({ home, env: {}, port: 0, startConnectors: fake });
+    await once(on, "listening");
+    await new Promise((r) => on.close(r));
+    assert.equal(calls.length, 1);
+  } finally {
+    rmSync(home, { recursive: true, force: true, maxRetries: 3 });
+  }
 });

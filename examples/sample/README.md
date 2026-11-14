@@ -1,6 +1,6 @@
-# Sample workspace: Northwind Bikes (invented)
+# Sample workspace: Larkspur Bikes (invented)
 
-Everything in this folder is invented for the sample. "Northwind Bikes" is a made-up bicycle shop, and its six projects
+Everything in this folder is invented for the sample. "Larkspur Bikes" is a made-up bicycle shop, and its six projects
 are fictional. Nothing here describes a real company, client or product. The sample is what `node serve.mjs --sample`
 builds into a temporary folder, so the map has something to show before you point Overmap at your own vault.
 
