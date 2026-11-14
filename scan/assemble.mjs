@@ -123,3 +123,10 @@ export function writeIfChanged(file, content) {
   writeFileSync(file, content);
   return true;
 }
+
+// Writes the architecture file when one is configured. Returns 'written', 'unchanged' or 'not-configured'
+// (a null or empty config.architectureFile writes nothing: no file named "null" in the working folder).
+export function writeArchitectureFile(file, content) {
+  if (typeof file !== 'string' || file === '') return 'not-configured';
+  return writeIfChanged(file, content) ? 'written' : 'unchanged';
+}

@@ -1,4 +1,8 @@
 // Claude Code Stop hook: blocks a stop once when the session changed a registered project but its plan was not updated.
+// Register it in ~/.claude/settings.json under hooks.Stop with this command (paths quoted, <overmap> = this checkout,
+// <dir> = the instance folder):
+//   { "type": "command", "command": "node \"<overmap>/hooks/plan-check.mjs\" --home \"<dir>\"", "timeout": 10 }
+// --home is optional: without it the instance folder comes from OVERMAP_HOME, then ~/.overmap.
 // Never blocks by mistake: any error, unknown cwd, no git, git timeout, out of time or stop_hook_active -> {} (exit 0). Read-only toward projects.
 import { existsSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
@@ -16,7 +20,7 @@ export const GRACE_MS = 30 * 60_000;
 const NO_LOCKS = '--no-optional-locks';
 const OUT_OF_TIME = Symbol('out-of-time');
 const MAX_STAT = 50;
-const FORMAT_REF = 'docs/hook.md in Overmap, section "PLAN.md"';
+const FORMAT_REF = 'README.md in Overmap, section "The Stop hook"';
 const NL = String.fromCharCode(10);
 const CR = String.fromCharCode(13);
 const BS = String.fromCharCode(92);

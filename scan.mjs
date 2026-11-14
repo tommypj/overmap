@@ -13,7 +13,7 @@ import { unmappedFolders } from './scan/refs.mjs';
 import { readCodexProjects, readClaudeProjects, unmappedAgentProjects, mergeUnmapped } from './scan/agents.mjs';
 import { writeArchitecture } from './scan/architecture.mjs';
 import { buildProjectSafe, fail } from './scan/project.mjs';
-import { loadSizeCache, saveSizeCache, mocTable, updateMoc, writeIfChanged } from './scan/assemble.mjs';
+import { loadSizeCache, saveSizeCache, mocTable, updateMoc, writeArchitectureFile } from './scan/assemble.mjs';
 
 const SKIP_SIZE = process.argv.includes('--no-size');
 const QUIET = process.argv.includes('--quiet');
@@ -55,9 +55,10 @@ const scanSeconds = Math.round((Date.now() - started) / 1000);
 const out = { generatedAt: new Date().toISOString(), scanSeconds, projects, unmapped, unmappedSources };
 writeFileSync(join(dataDir, 'projects.json'), JSON.stringify(out, null, 2));
 
-let archWritten = false, mocWritten = false;
-try { writeIfChanged(norm(config.architectureFile), writeArchitecture(projects, registry, config, unmapped)); archWritten = true; } catch (e) { console.error(`ARCHITECTURE.md not written: ${e.message}`); }
+let mocWritten = false;
+let archStatus;
+try { archStatus = writeArchitectureFile(config.architectureFile ? norm(config.architectureFile) : null, writeArchitecture(projects, registry, config, unmapped)); } catch (e) { archStatus = 'failed'; console.error(`ARCHITECTURE.md not written: ${e.message}`); }
 try { mocWritten = updateMoc(config.mocFile, mocTable(projects)); } catch (e) { console.error(`MOC not updated: ${e.message}`); }
 
 const risky = projects.filter((p) => p.attention.some((f) => f.level === 'risk')).length;
-console.log(`done: ${projects.length} projects in ${scanSeconds}s · ${risky} with risk flags · ${unmapped.length} unmapped · ARCHITECTURE.md ${archWritten ? 'written' : 'FAILED'} · MOC ${mocWritten ? 'refreshed' : 'not found, skipped'}`);
+console.log(`done: ${projects.length} projects in ${scanSeconds}s · ${risky} with risk flags · ${unmapped.length} unmapped · ARCHITECTURE.md ${archStatus === 'failed' ? 'FAILED' : archStatus === 'not-configured' ? 'not configured, not written' : 'written'} · MOC ${mocWritten ? 'refreshed' : 'not found, skipped'}`);
