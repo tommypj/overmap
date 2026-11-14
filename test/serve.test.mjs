@@ -4,11 +4,11 @@ import http from 'node:http';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, renameSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createApp } from '../serve.mjs';
+import { createApp, startServer } from '../serve.mjs';
 
 const NOMINAL = 45871; // the port the Host header claims; the test server itself binds port 0
 const LOGIN = 'me@example.com';
-const config = { vaultProjectsDir: '/p', mocFile: '/m.md', allowedLogin: LOGIN, port: NOMINAL, architectureFile: '/a.md', memoryRoot: '/mem' };
+const config = { vaultProjectsDir: '/p', mocFile: '/m.md', allowedLogin: LOGIN, port: NOMINAL, architectureFile: '/a.md', memoryRoot: '/mem', proxyHost: 'host.tail0000.ts.net' }; // privacy-ok
 
 const base = mkdtempSync(join(tmpdir(), 'serve-'));
 const root = join(base, 'proj');
@@ -193,4 +193,22 @@ test('/api/live, /legacy and /setup are gone', async () => {
   assert.equal((await req('/api/live?id=P1')).status, 404);
   assert.equal((await req('/legacy')).status, 404);
   assert.equal((await req('/setup')).status, 404);
+});
+
+test('EADDRINUSE calls onError with a refusing message', async () => {
+  const blocker = http.createServer();
+  await new Promise((r) => blocker.listen(0, '127.0.0.1', r));
+  const p = blocker.address().port;
+  const home = mkdtempSync(join(tmpdir(), 'serve-busy-'));
+  writeFileSync(join(home, 'overmap.config.json'), JSON.stringify({ vaultProjectsDir: '/p', port: p }));
+  try {
+    const got = await new Promise((resolve) => {
+      startServer({ home, env: {}, noSchedule: true, onError: (e, msg) => resolve({ e, msg }) });
+    });
+    assert.equal(got.e.code, 'EADDRINUSE');
+    assert.match(got.msg, /in use, refusing/);
+  } finally {
+    blocker.close();
+    rmSync(home, { recursive: true, force: true });
+  }
 });

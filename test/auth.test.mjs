@@ -54,12 +54,19 @@ test('missing or empty allowedLogin never grants tailnet', () => {
   assert.equal(classify(req('127.0.0.1', tn), {}), null);
 });
 
-test('hostOk allows the three hosts only', () => {
+test('hostOk accepts loopback hosts and refuses everything else', () => {
   const h = (host) => ({ headers: host === undefined ? {} : { host } });
   assert.equal(hostOk(h('127.0.0.1:3210')), true);
   assert.equal(hostOk(h('localhost:3210')), true);
-  assert.equal(hostOk(h('host.tail0000.ts.net')), true); // privacy-ok
   assert.equal(hostOk(h('evil.example:3210')), false);
   assert.equal(hostOk(h('127.0.0.1:9999')), false);
   assert.equal(hostOk(h(undefined)), false);
+});
+test('hostOk accepts the configured proxy host only', () => {
+  assert.ok(hostOk({ headers: { host: 'box.tail0000.ts.net' } }, 3210, 'box.tail0000.ts.net')); // privacy-ok
+  assert.ok(!hostOk({ headers: { host: 'box.tail0000.ts.net' } }, 3210, null)); // privacy-ok
+  assert.ok(hostOk({ headers: { host: '127.0.0.1:3210' } }, 3210, null));
+});
+test('empty allowedLogin never grants tailnet', () => {
+  assert.equal(classify(req('127.0.0.1', tn), { allowedLogin: '' }), null);
 });

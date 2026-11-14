@@ -6,12 +6,10 @@ import { spawn } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { resolveSafe, listDir, indexFiles, Forbidden } from '../server/fsapi.mjs';
 import { SECRET_NAME } from '../lib/paths.mjs';
 import { createApp, startServer } from '../serve.mjs';
 import { createRoutes } from '../server/api.mjs';
-const SERVE = fileURLToPath(new URL('../serve.mjs', import.meta.url));
 import { createHandler } from '../server/router.mjs';
 import { cachedSize } from '../scan/assemble.mjs';
 
@@ -114,40 +112,6 @@ test('--no-size reuses the cached size, null when uncached', () => {
 });
 
 
-
-test('startServer reports a port in use through onError', async () => {
-  const blocker = http.createServer();
-  await listen(blocker);
-  const p = blocker.address().port;
-  const got = await new Promise((resolve) => {
-    startServer({ home: configHome('e-home', p), noSchedule: true, onError: (e, msg) => resolve({ e, msg }) });
-  });
-  blocker.close();
-  assert.equal(got.e.code, 'EADDRINUSE');
-  assert.match(got.msg, /port \d+ in use \(PID .*\): not this server, refusing to start/);
-});
-
-test('startServer takes the port over from an older copy of itself', async () => {
-  const { isOlderSelf } = await import('../serve.mjs');
-  assert.equal(isOlderSelf(`"C:\\Program Files\\nodejs\\node.exe" ${SERVE}`), true); // privacy-ok
-  assert.equal(isOlderSelf('node /projects/other/serve.mjs'), false);
-  assert.equal(isOlderSelf(null), false);
-  const blocker = http.createServer();
-  await listen(blocker);
-  const p = blocker.address().port;
-  let killed = null;
-  const srv = startServer(
-    { home: configHome('e3-home', p), noSchedule: true,
-      ownerOf: async () => '4242',
-      cmdLineOf: async () => `"C:\\Program Files\\nodejs\\node.exe" ${SERVE}`, // privacy-ok
-      kill: (pid) => { killed = pid; blocker.close(); },
-      onError: (e, msg) => { throw new Error(`unexpected onError: ${msg}`); },
-    });
-  await new Promise((resolve) => srv.on('listening', resolve));
-  assert.equal(killed, 4242);
-  assert.equal(srv.address().port, p);
-  await closeServer(srv);
-});
 
 test('a second server process on a busy port exits with code 2', async () => {
   const blocker = http.createServer();

@@ -42,7 +42,7 @@ test('slugify', () => {
 test('validateNewProject: field errors', () => {
   const s = setup();
   try {
-    const o = { registry: s.registry, projectsDir: s.projectsDir, vaultDir: s.vaultDir };
+    const o = { registry: s.registry, projectsDir: s.projectsDir, vaultDir: s.vaultDir, platform: 'win32' };
     const bad = validateNewProject({ name: 'x', family: 'a/b', purpose: '', branchesOff: 'nope', uses: ['nope'] }, o);
     assert.equal(bad.ok, false);
     for (const k of ['name', 'family', 'purpose', 'branchesOff', 'uses']) assert.ok(bad.errors[k], k);
@@ -94,7 +94,7 @@ async function withApp(fn, { noVault = false } = {}) {
   const rescans = [];
   const actionsDir = join(s.dir, 'actions');
   mkdirSync(actionsDir);
-  const config = { home: s.dir, allowedLogin: LOGIN, projectsDir: s.projectsDir, ...(noVault ? {} : { vaultProjectsDir: s.vaultDir }) };
+  const config = { home: s.dir, allowedLogin: LOGIN, proxyHost: 'host.tail0000.ts.net', projectsDir: s.projectsDir, ...(noVault ? {} : { vaultProjectsDir: s.vaultDir }) }; // privacy-ok
   const routes = createRoutes({ config, actionsDir, rescan: (f) => { rescans.push(f); }, isScanning: () => false });
   const server = http.createServer();
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
@@ -140,7 +140,7 @@ test('route: validation, confirm, create, duplicate, tailnet', async () => {
 test('validate: control chars, reserved names, uses limits, dedupe', () => {
   const s = setup();
   try {
-    const o = { registry: s.registry, projectsDir: s.projectsDir, vaultDir: s.vaultDir };
+    const o = { registry: s.registry, projectsDir: s.projectsDir, vaultDir: s.vaultDir, platform: 'win32' };
     const inj = validateNewProject({ ...good, purpose: 'x\ndashboard: false\npath: /elsewhere' }, o);
     assert.equal(inj.errors.purpose, 'no line breaks or control characters');
     assert.equal(validateNewProject({ ...good, name: 'a\tb' }, o).errors.name, 'no line breaks or control characters');
@@ -156,7 +156,7 @@ test('validate: control chars, reserved names, uses limits, dedupe', () => {
 test('createProject: unreadable registry fails with nothing written; no branchesOff key; punctuation round-trips', () => {
   const s = setup();
   try {
-    const o = { registry: s.registry, projectsDir: s.projectsDir, vaultDir: s.vaultDir };
+    const o = { registry: s.registry, projectsDir: s.projectsDir, vaultDir: s.vaultDir, platform: 'win32' };
     const v = validateNewProject(good, o).value;
     assert.throws(() => createProject(v, { registryFile: join(s.dir, 'missing.json') }));
     assert.equal(existsSync(v.home), false); assert.equal(existsSync(v.note), false);
@@ -197,10 +197,16 @@ test('route: injection refused with nothing written, audit rows, nonce bound to 
 });
 
 test('reserved device names are refused even with an extension part', () => {
-  const o = { registry: new Map(), exists: () => false, projectsDir: '/projects', vaultDir: '/vault' };
+  const o = { registry: new Map(), exists: () => false, projectsDir: '/projects', vaultDir: '/vault', platform: 'win32' };
   for (const name of ['nul.foo', 'NUL', 'com1.x']) {
     const v = validateNewProject({ name, family: 'f', purpose: 'p' }, o);
     assert.equal(v.ok, false, name);
     assert.equal(v.errors.name, 'reserved name on Windows', name);
   }
+});
+
+test('reserved device names are refused on win32 only', () => {
+  const o = { registry: new Map(), exists: () => false, projectsDir: '/projects', vaultDir: '/vault' };
+  assert.equal(validateNewProject({ name: 'NUL', family: 'f', purpose: 'p' }, { ...o, platform: 'win32' }).errors.name, 'reserved name on Windows');
+  assert.equal(validateNewProject({ name: 'NUL', family: 'f', purpose: 'p' }, { ...o, platform: 'linux' }).ok, true);
 });

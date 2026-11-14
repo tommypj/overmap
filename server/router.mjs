@@ -31,7 +31,7 @@ export function createHandler({ config, port, routes }) {
     res.setHeader('x-content-type-options', 'nosniff');
     res.setHeader('content-security-policy', CSP);
     try {
-      if (!hostOk(req, port) || classify(req, config) === null) {
+      if (!hostOk(req, port, config.proxyHost) || classify(req, config) === null) {
         sendJson(req, res, 403, { error: 'not allowed from here' });
         return;
       }
@@ -47,7 +47,7 @@ export function createHandler({ config, port, routes }) {
           sendJson(req, res, 405, { error: 'method not allowed' });
           return;
         }
-        if (!originOk(req, port)) {
+        if (!originOk(req, port, config.proxyHost)) {
           sendJson(req, res, 403, { error: 'bad origin' });
           return;
         }

@@ -22,7 +22,7 @@ writeFileSync(join(root, 'sub', 'clip.mp4'), 'x');
 writeFileSync(join(root, 'sub', 'plan.docx'), 'x');
 writeFileSync(join(root, 'sub', 'notes.md'), 'x');
 writeFileSync(join(outside, 'secret.txt'), 'nope');
-symlinkSync(outside, join(root, 'link'), 'junction');
+symlinkSync(outside, join(root, 'link'), process.platform === 'win32' ? 'junction' : 'dir');
 const roots = [root];
 
 test.after(() => rmSync(base, { recursive: true, force: true }));
@@ -52,6 +52,19 @@ test('refuses .git and secret names, allows .env.example', () => {
 test('refuses a junction pointing outside the root', () => {
   assert.throws(() => resolveSafe(roots, 0, 'link/secret.txt'), Forbidden);
   assert.throws(() => resolveSafe(roots, 0, 'link'), Forbidden);
+});
+
+test('a symlink inside a root that points outside is refused with Forbidden(link)', () => {
+  const b = mkdtempSync(join(tmpdir(), 'fsapi-link-'));
+  try {
+    const r = join(b, 'root');
+    const sib = join(b, 'sibling');
+    mkdirSync(r);
+    mkdirSync(sib);
+    writeFileSync(join(sib, 'x.txt'), 'x');
+    symlinkSync(sib, join(r, 'link'), process.platform === 'win32' ? 'junction' : 'dir');
+    assert.throws(() => resolveSafe([r], 0, 'link/x.txt'), (e) => e instanceof Forbidden && e.message === 'link');
+  } finally { rmSync(b, { recursive: true, force: true }); }
 });
 
 test('listDir hides .git and secrets, flags dep dirs, folders first', () => {

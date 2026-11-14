@@ -33,8 +33,10 @@ test('readJsonBody rejects bad input', async () => {
   assert.equal(await post('"x"'), 400);
   assert.equal(await post('{bad'), 400);
 });
-test('originOk', () => {
+test('originOk accepts loopback origins; the proxy origin only when a proxy host is configured', () => {
   const o = (origin) => ({ headers: origin === undefined ? {} : { origin } });
-  for (const x of ['http://127.0.0.1:3210', 'http://localhost:3210', 'https://host.tail0000.ts.net']) assert.equal(originOk(o(x), 3210), true, x); // privacy-ok
+  for (const x of ['http://127.0.0.1:3210', 'http://localhost:3210']) assert.equal(originOk(o(x), 3210), true, x);
+  assert.equal(originOk(o('https://box.tail0000.ts.net'), 3210, 'box.tail0000.ts.net'), true); // privacy-ok
+  assert.equal(originOk(o('https://box.tail0000.ts.net'), 3210, null), false); // privacy-ok
   for (const x of ['http://127.0.0.1:3211', 'https://evil.example', 'null', undefined]) assert.equal(originOk(o(x), 3210), false, String(x));
 });

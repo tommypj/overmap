@@ -137,35 +137,8 @@ export function startConnectorScheduler(config, {
   return { tick, isRunning: (id) => running.has(id), stop: () => { timers.forEach((t) => { clearInterval(t); clearTimeout(t); }); if (ownsDb && db) { try { db.close(); } catch { /* closed */ } db = null; } } };
 }
 
-async function portOwner(port) {
-  try {
-    const { stdout } = await promisify(execFile)('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
-      `(Get-NetTCPConnection -State Listen -LocalPort ${Number(port)} -ErrorAction Stop | Select-Object -First 1).OwningProcess`],
-    { timeout: 10000, windowsHide: true });
-    const pid = stdout.trim();
-    return /^\d+$/.test(pid) ? pid : null;
-  } catch { return null; }
-}
-
-// Command line of a PID, or null. Used to decide whether the port owner is an older copy of this server.
-async function commandLineOf(pid) {
-  try {
-    const { stdout } = await promisify(execFile)('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
-      `(Get-CimInstance Win32_Process -Filter "ProcessId=${Number(pid)}").CommandLine`], { timeout: 10000, windowsHide: true });
-    return stdout.trim() || null;
-  } catch { return null; }
-}
-
-// True when the command line is this same serve.mjs from this folder (an older instance left behind
-// because the scheduled task's PowerShell wrapper was stopped without its node child).
-export function isOlderSelf(cmdLine, here = HERE) {
-  if (!cmdLine) return false;
-  const norm = (s) => s.replace(/\\/g, '/').toLowerCase();
-  return norm(cmdLine).includes(norm(resolve(here, 'serve.mjs')));
-}
-
 // Options: home (instance folder), port (overrides config.port), noSchedule (or OVERMAP_NO_SCHEDULE=1).
-export function startServer({ home = resolveHome(), env = process.env, onError, port: portOverride, noSchedule: noScheduleOpt = false, ownerOf = portOwner, cmdLineOf = commandLineOf, kill = (pid) => process.kill(pid) } = {}) {
+export function startServer({ home = resolveHome(), env = process.env, onError, port: portOverride, noSchedule: noScheduleOpt = false } = {}) {
   const loaded = loadConfig(home);
   const config = portOverride ? { ...loaded, port: portOverride } : loaded;
   const port = config.port;
@@ -174,25 +147,8 @@ export function startServer({ home = resolveHome(), env = process.env, onError, 
   const scheduler = !noSchedule ? startScheduler(config) : null;
   const server = createApp(config, env, { secrets, ...(scheduler ? { rescan: (full) => scheduler.scan(full), isScanning: () => scheduler.isRunning() } : {}) });
   if (scheduler) server.on('close', scheduler.stop);
-  let tookOver = false;
-  server.on('error', async (err) => {
-    if (err.code === 'EADDRINUSE' && !tookOver) {
-      const owner = await ownerOf(port);
-      const cmd = owner ? await cmdLineOf(owner) : null;
-      if (owner && isOlderSelf(cmd)) {
-        // Take the port over from the older copy of ourselves, then listen once more.
-        tookOver = true;
-        console.error(`port ${port} held by an older serve.mjs (PID ${owner}); replacing it`);
-        try { kill(Number(owner)); } catch { /* already gone */ }
-        setTimeout(() => server.listen(port, '127.0.0.1'), 1500);
-        return;
-      }
-      const msg = `port ${port} in use (PID ${owner ?? 'unknown'}): not this server, refusing to start`;
-      console.error(msg);
-      if (onError) onError(err, msg); else process.exit(2);
-      return;
-    }
-    const msg = `server error: ${err.message}`;
+  server.on('error', (err) => {
+    const msg = err.code === 'EADDRINUSE' ? `port ${port} in use, refusing to start` : `server error: ${err.message}`;
     console.error(msg);
     if (onError) onError(err, msg); else process.exit(2);
   });

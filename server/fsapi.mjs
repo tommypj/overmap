@@ -1,5 +1,5 @@
 // Confined, read-only filesystem access for the cockpit API.
-import { readdirSync, statSync, realpathSync, createReadStream, readFileSync } from 'node:fs';
+import { readdirSync, statSync, lstatSync, realpathSync, createReadStream, readFileSync } from 'node:fs';
 import { join, basename, extname, relative } from 'node:path';
 import { pipeline } from 'node:stream';
 import { norm, isUnder, isSecretName, DEP_DIRS } from '../lib/paths.mjs';
@@ -62,6 +62,14 @@ export function resolveSafe(roots, rootIndex, rel) {
   if (segs.some((s) => isSecretName(s))) throw new Forbidden('secret file');
   const root = roots[rootIndex];
   const target = join(root, ...segs);
+  // Refuse a link (symlink or junction) on the way down, before the realpath comparison.
+  let walk = root;
+  for (const seg of segs) {
+    walk = join(walk, seg);
+    let st;
+    try { st = lstatSync(walk); } catch { throw new NotFound(); }
+    if (st.isSymbolicLink()) throw new Forbidden('link');
+  }
   let realRoot;
   let realTarget;
   try { realRoot = realpathSync.native(root); } catch { throw new NotFound('root missing'); }

@@ -1,5 +1,4 @@
 const LOOPBACK = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
-const TAILNET_HOST = 'host.tail0000.ts.net'; // privacy-ok
 
 function header(req, name) {
   const v = req.headers?.[name];
@@ -27,7 +26,8 @@ export function classify(req, config) {
   return null;
 }
 
-export function hostOk(req, port = 3210) {
+// Loopback hosts, plus the configured proxy host (null = none configured, so only loopback passes).
+export function hostOk(req, port = 3210, proxyHost = null) {
   const host = header(req, 'host')?.toLowerCase();
-  return host === `127.0.0.1:${port}` || host === `localhost:${port}` || host === TAILNET_HOST;
+  return host === `127.0.0.1:${port}` || host === `localhost:${port}` || (!!proxyHost && host === proxyHost.toLowerCase());
 }

@@ -4,7 +4,7 @@ import http from 'node:http';
 import { createHandler, sendJson } from '../server/router.mjs';
 import { createActionRoutes } from '../server/actions.mjs';
 
-const config = { allowedLogin: 'me@example.com' };
+const config = { allowedLogin: 'me@example.com', proxyHost: 'host.tail0000.ts.net' }; // privacy-ok
 async function withApp(fn) {
   const calls = [];
   const routes = async (ctx) => { calls.push(ctx.body); sendJson(ctx.req, ctx.res, 200, { ok: true }); return true; };

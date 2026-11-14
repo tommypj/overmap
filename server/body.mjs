@@ -1,9 +1,9 @@
 // POST body + origin checks. The body read is bounded: it stops at the limit instead of buffering the rest.
 import { BadRequest } from './fsapi.mjs';
 
-export function originOk(req, port) {
+export function originOk(req, port, proxyHost = null) {
   const o = req.headers?.origin;
-  return typeof o === 'string' && (o === `http://127.0.0.1:${port}` || o === `http://localhost:${port}` || o === 'https://host.tail0000.ts.net'); // privacy-ok
+  return typeof o === 'string' && (o === `http://127.0.0.1:${port}` || o === `http://localhost:${port}` || (!!proxyHost && o === `https://${proxyHost}`));
 }
 
 export function readJsonBody(req, { limit = 65_536 } = {}) {
