@@ -5,7 +5,7 @@ import os from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { buildResult, fromNodeSummary, fromJestJson, fromJunitXml } from '../tools/test-results-lib.mjs';
-import { parseArgs, convert, resolveCommand } from '../tools/test-results.mjs';
+import { parseArgs, convert, resolveCommand, npmCliCandidates } from '../tools/test-results.mjs';
 import { readTestResults } from '../scan/tests.mjs';
 
 const tmp = () => fs.mkdtempSync(join(os.tmpdir(), 'tr-tools-'));
@@ -57,6 +57,24 @@ test('run mode: parseArgs splits at --, npm/npx/node resolve next to this node, 
   const npm = resolveCommand(['npm', 'test']);
   assert.equal(npm[0], process.execPath); assert.match(npm[1], /npm-cli\.js$/);
   assert.throws(() => resolveCommand(['npx', 'x'], '/nowhere/node.exe'), /npx-cli\.js not found/);
+});
+
+test('run mode: npm/npx found in both the Windows and the POSIX install layout', () => {
+  const d = tmp();
+  // Windows: <dir>/node.exe beside <dir>/node_modules/npm
+  fs.mkdirSync(join(d, 'win', 'node_modules', 'npm', 'bin'), { recursive: true });
+  fs.writeFileSync(join(d, 'win', 'node_modules', 'npm', 'bin', 'npm-cli.js'), '');
+  const winNode = join(d, 'win', 'node.exe');
+  assert.deepEqual(resolveCommand(['npm', 'test'], winNode), [winNode, join(d, 'win', 'node_modules', 'npm', 'bin', 'npm-cli.js'), 'test']);
+  // POSIX: <prefix>/bin/node, npm under <prefix>/lib/node_modules/npm
+  fs.mkdirSync(join(d, 'px', 'bin'), { recursive: true });
+  fs.mkdirSync(join(d, 'px', 'lib', 'node_modules', 'npm', 'bin'), { recursive: true });
+  fs.writeFileSync(join(d, 'px', 'lib', 'node_modules', 'npm', 'bin', 'npx-cli.js'), '');
+  const pxNode = join(d, 'px', 'bin', 'node');
+  assert.deepEqual(resolveCommand(['npx', 'vitest'], pxNode), [pxNode, join(d, 'px', 'lib', 'node_modules', 'npm', 'bin', 'npx-cli.js'), 'vitest']);
+  assert.equal(npmCliCandidates('npm-cli.js', pxNode).length, 2);
+  assert.throws(() => resolveCommand(['npm', 'x'], pxNode), /npm-cli\.js not found/);
+  fs.rmSync(d, { recursive: true, force: true });
 });
 
 test('run mode CLI: runs the command, converts its report, exits with the command\'s code', () => {

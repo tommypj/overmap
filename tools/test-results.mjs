@@ -13,9 +13,10 @@
 //
 // Options: --out <path> (default ./test-results.json), --command <text> (recorded, cut to 200 chars).
 // Exit 0 when the file was written, 2 on bad input. Nothing but counts is read from the report.
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, realpathSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
 import { FORMATS, serialize } from './test-results-lib.mjs';
 
 export function parseArgs(argv) {
@@ -34,12 +35,19 @@ export function parseArgs(argv) {
 }
 
 // `npm`/`npx` become the CLI scripts shipped next to the running node; `node` becomes this node.
+// Windows installs keep npm at <dir>/node_modules/npm; POSIX ones at <prefix>/lib/node_modules/npm
+// with node in <prefix>/bin.
+export function npmCliCandidates(name, execPath = process.execPath) {
+  const dir = dirname(execPath);
+  return [join(dir, 'node_modules', 'npm', 'bin', name), join(dir, '..', 'lib', 'node_modules', 'npm', 'bin', name)];
+}
+
 export function resolveCommand(cmd, execPath = process.execPath) {
   const [head, ...args] = cmd;
   if (head === 'node') return [execPath, ...args];
   if (head === 'npm' || head === 'npx') {
-    const cli = join(dirname(execPath), 'node_modules', 'npm', 'bin', `${head}-cli.js`);
-    if (!existsSync(cli)) throw new Error(`${head}-cli.js not found next to node`);
+    const cli = npmCliCandidates(`${head}-cli.js`, execPath).find((p) => existsSync(p));
+    if (!cli) throw new Error(`${head}-cli.js not found next to node`);
     return [execPath, cli, ...args];
   }
   return cmd;
@@ -77,4 +85,11 @@ function main() {
   }
 }
 
-if (process.argv[1] && import.meta.url === new URL(`file:///${resolve(process.argv[1]).replaceAll('\\', '/')}`).href) process.exit(main());
+function isMain() {
+  if (!process.argv[1]) return false;
+  let p = resolve(process.argv[1]);
+  try { p = realpathSync(p); } catch { /* keep the resolved path */ }
+  return import.meta.url === pathToFileURL(p).href;
+}
+
+if (isMain()) process.exit(main());
