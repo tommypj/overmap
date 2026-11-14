@@ -1,0 +1,33 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / Node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: ['22.13', '24']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      # Some tests make throwaway git repos and commit to them.
+      - name: Git identity for test repos
+        run: |
+          git config --global user.name "overmap-ci"
+          git config --global user.email "ci@example.com"
+      - name: Tests
+        run: node --test "test/*.test.mjs"
+      - name: Privacy check (generic patterns)
+        run: node tools/publish-check.mjs .
