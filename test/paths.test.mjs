@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { norm, isUnder, SECRET_NAME, DEP_DIRS } from '../lib/paths.mjs';
+import fs from 'node:fs';
+import os from 'node:os';
+import { join } from 'node:path';
+import { norm, isUnder, canon, SECRET_NAME, DEP_DIRS } from '../lib/paths.mjs';
 
 test('norm normalises slashes, drive letter, trailing slash', () => {
   const B = String.fromCharCode(92);
@@ -22,4 +25,16 @@ test('SECRET_NAME', () => {
 test('DEP_DIRS', () => {
   assert.ok(DEP_DIRS.has('node_modules') && DEP_DIRS.has('graphify-out') && DEP_DIRS.has('.tmp-media'));
   assert.equal(DEP_DIRS.size, 16);
+});
+
+test('canon resolves links (and a missing tail through its parent) so link and target compare equal', () => {
+  const d = fs.realpathSync.native(fs.mkdtempSync(join(os.tmpdir(), 'canon-')));
+  try {
+    fs.mkdirSync(join(d, 'target', 'wt'), { recursive: true });
+    fs.symlinkSync(join(d, 'target'), join(d, 'link'), 'junction'); // junction: no admin needed on Windows
+    assert.equal(canon(join(d, 'link', 'wt')), norm(join(d, 'target', 'wt')));
+    assert.equal(canon(join(d, 'link', 'gone', 'deeper')), norm(join(d, 'target', 'gone', 'deeper')));
+    assert.ok(isUnder(canon(join(d, 'target', 'wt')), canon(join(d, 'link'))));
+    assert.equal(canon('/zz-nowhere-at-all/x'), '/zz-nowhere-at-all/x'); // nothing exists below the root: only normalised
+  } finally { fs.rmSync(d, { recursive: true, force: true }); }
 });

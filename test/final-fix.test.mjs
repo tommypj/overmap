@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, unlinkSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, unlinkSync, chmodSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -114,7 +114,8 @@ test('secrets file that disappears becomes missing, not cached values', () => {
   const s = createSecrets(dir);
   try {
     writeFileSync(file, JSON.stringify({ A: 'va' }));
-    execFileSync('icacls', [file, '/inheritance:r', '/grant:r', `${process.env.USERDOMAIN}\\${process.env.USERNAME}:F`], { stdio: 'ignore' });
+    if (process.platform === 'win32') execFileSync('icacls', [file, '/inheritance:r', '/grant:r', `${process.env.USERDOMAIN}\\${process.env.USERNAME}:F`], { stdio: 'ignore' });
+    else chmodSync(file, 0o600);
     assert.equal(s.getSecret('A'), 'va');
     unlinkSync(file);
     assert.equal(s.getSecret('A'), undefined);

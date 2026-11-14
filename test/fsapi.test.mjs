@@ -114,7 +114,7 @@ test('refuses NTFS stream and trailing dot/space aliases', () => {
   }
 });
 
-test('refuses 8.3 short-name aliases of hidden entries', (t) => {
+test('refuses 8.3 short-name aliases of hidden entries', { skip: process.platform !== 'win32' && '8.3 short names are Windows-only' }, (t) => {
   const out = execFileSync('cmd.exe', ['/d', '/c', 'dir', '/x', root], { encoding: 'utf8' });
   const aliases = [];
   for (const line of out.split(/\r?\n/)) {

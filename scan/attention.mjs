@@ -1,4 +1,4 @@
-import { isUnder, norm } from '../lib/paths.mjs';
+import { isUnder, norm, canon } from '../lib/paths.mjs';
 
 // Attention flags: what needs a human. Unknown (null / missing fact) is never turned into a flag
 // about the thing itself; at most a "facts incomplete" warning.
@@ -16,7 +16,10 @@ export function attentionFlags(p, now = Date.now(), ctx = { registeredRoots: [],
   if (p.exists === false) risk(`home missing: ${p.home}`);
 
   const roots = [...(ctx.registeredRoots ?? []), ...(p.worktreesManaged ?? [])];
-  const repoPaths = new Set((p.repos ?? []).map((r) => r.path.toLowerCase()));
+  const repoPaths = new Set((p.repos ?? []).map((r) => canon(r.path).toLowerCase()));
+  const homeKey = p.home ? canon(p.home).toLowerCase() : null;
+  // git reports worktree paths canonically; registry paths may be symlinked or 8.3 short forms
+  const canonRoots = [...roots, ...(ctx.toolHomes ?? [])].map(canon);
   for (const r of p.repos ?? []) {
     const g = r.git;
     if (!g || g.error || !g.value) { risk(`${r.path}: git unreadable: ${g?.error ?? 'no facts'}`); continue; }
@@ -27,9 +30,10 @@ export function attentionFlags(p, now = Date.now(), ctx = { registeredRoots: [],
     const dirty = (v.modified ?? 0) + (v.untracked ?? 0);
     if (dirty > 0) warn(`${r.path}: ${dirty} uncommitted`);
     for (const w of v.worktrees ?? []) {
-      const key = String(w.path).toLowerCase();
-      if (w.prunable || repoPaths.has(key) || key === String(p.home).toLowerCase()) continue;
-      if (roots.some((r) => isUnder(w.path, r)) || (ctx.toolHomes ?? []).some((r) => isUnder(w.path, r))) continue;
+      const wp = canon(w.path);
+      const key = wp.toLowerCase();
+      if (w.prunable || repoPaths.has(key) || key === homeKey) continue;
+      if (canonRoots.some((r) => isUnder(wp, r))) continue;
       if (/(^|\/)\.claude\/worktrees\//i.test(norm(w.path))) continue;
       warn(`${r.path}: unmapped worktree ${w.path}`);
     }

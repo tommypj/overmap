@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, writeFileSync, utimesSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, utimesSync, chmodSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDb } from '../lib/db.mjs';
@@ -131,13 +131,16 @@ test('secrets signature includes ctime (a metadata-only change re-reads)', async
   const file = join(dir, 'secrets.json');
   const s = createSecrets(dir);
   writeFileSync(file, JSON.stringify({ A: 'v1' }));
-  execFileSync('icacls', [file, '/inheritance:r', '/grant:r', `${process.env.USERDOMAIN}\\${process.env.USERNAME}:F`], { stdio: 'ignore' });
+  const win = process.platform === 'win32';
+  if (win) execFileSync('icacls', [file, '/inheritance:r', '/grant:r', `${process.env.USERDOMAIN}\\${process.env.USERNAME}:F`], { stdio: 'ignore' });
+  else chmodSync(file, 0o600);
   try {
     assert.equal(s.getSecret('A'), 'v1');
     const first = s.health().cachedAt;
     await new Promise((r) => setTimeout(r, 20));
-    // an ACL change moves ctime but not mtime or size
-    execFileSync('icacls', [file, '/grant', 'Everyone:R'], { stdio: 'ignore' });
+    // an ACL (Windows) or mode (POSIX) change moves ctime but not mtime or size
+    if (win) execFileSync('icacls', [file, '/grant', 'Everyone:R'], { stdio: 'ignore' });
+    else chmodSync(file, 0o644);
     s.getSecret('A');
     assert.notEqual(s.health().cachedAt, first);
     assert.equal(s.health().file, 'unprotected');

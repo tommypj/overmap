@@ -7,6 +7,9 @@ import { execFileSync } from 'node:child_process';
 import { gitFacts } from '../scan/git.mjs';
 import { norm } from '../lib/paths.mjs';
 
+// git reports worktree paths with symlinks and 8.3 short names resolved
+const real = (p) => norm(fs.realpathSync.native(p));
+
 const ID = ['-c', 'user.name=T', '-c', 'user.email=t@example.com', '-c', 'commit.gpgsign=false'];
 const git = (cwd, ...args) => execFileSync('git', [...ID, ...args], { cwd, encoding: 'utf8', windowsHide: true });
 
@@ -56,14 +59,14 @@ test('worktree listed under main repo and recognised itself', async () => {
   fs.writeFileSync(join(wt, 'x.txt'), 'x');
   const main = (await gitFacts(dir)).value;
   assert.equal(main.worktrees.length, 1);
-  assert.equal(main.worktrees[0].path, norm(wt));
+  assert.equal(main.worktrees[0].path, real(wt));
   assert.equal(main.worktrees[0].branch, 'feat');
   assert.equal(main.worktrees[0].untracked, 1);
   const w = (await gitFacts(wt)).value;
   assert.equal(w.isWorktree, true);
-  assert.equal(w.mainRepo, norm(dir));
+  assert.equal(w.mainRepo, real(dir));
   assert.equal(w.branch, 'feat');
-  assert.deepEqual(w.worktrees.map((x) => x.path), [norm(dir)]);
+  assert.deepEqual(w.worktrees.map((x) => x.path), [real(dir)]);
 });
 
 test('worktree whose folder is gone reports unknown counts, not zeros', async () => {
@@ -71,9 +74,10 @@ test('worktree whose folder is gone reports unknown counts, not zeros', async ()
   const wt = dir + '-gone';
   made.push(wt);
   git(dir, 'worktree', 'add', '-q', '-b', 'gone', wt);
+  const wtReal = real(wt);
   fs.rmSync(wt, { recursive: true, force: true });
   const v = (await gitFacts(dir)).value;
-  const e = v.worktrees.find((x) => x.path === norm(wt));
+  const e = v.worktrees.find((x) => x.path === wtReal);
   assert.ok(e.error);
   assert.equal(e.modified, null);
   assert.equal(e.untracked, null);

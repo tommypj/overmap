@@ -2,7 +2,7 @@
 // Edge = { a, b, kind: 'uses' | 'connects' | 'repo', service? }. A uses edge has b = service = serviceId(...).
 // Service = { id, name, count }: name is the alias target id when any spelling was aliased, otherwise the
 // lexicographically smallest raw spelling; count is the number of distinct projects using it.
-import { norm } from '../lib/paths.mjs';
+import { canon } from '../lib/paths.mjs';
 import { stripCredentials } from './git.mjs';
 
 export const SERVICE_ALIASES = {
@@ -32,7 +32,7 @@ function resolveProject(text, projects) {
 }
 
 const repoKey = (url) => stripCredentials(String(url)).trim().toLowerCase().replace(/\.git$/, '').replace(/\/+$/, '');
-const pathKey = (p) => norm(p).toLowerCase();
+const pathKey = (p) => canon(p).toLowerCase(); // git reports worktrees canonically
 
 // Remote URLs and worktree paths of one project's git facts; errored facts contribute nothing.
 function gitIdentity(project) {
