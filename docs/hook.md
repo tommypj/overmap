@@ -22,9 +22,15 @@ Every failure path lets the stop through: a bad input, an unknown folder, a miss
 Add the hook to `~/.claude/settings.json`, quoting both paths. `<overmap>` is your checkout; `<dir>` is your instance folder.
 
 ```json
-"Stop": [
-  { "type": "command", "command": "node \"<overmap>/hooks/plan-check.mjs\" --home \"<dir>\"", "timeout": 10 }
-]
+"hooks": {
+  "Stop": [
+    {
+      "hooks": [
+        { "type": "command", "command": "node \"<overmap>/hooks/plan-check.mjs\" --home \"<dir>\"", "timeout": 10 }
+      ]
+    }
+  ]
+}
 ```
 
 `--home` is optional. Without it, the hook reads `OVERMAP_HOME`, then `~/.overmap`. It reads `registry.json` from that folder, so run `make-registry.mjs` at least once first.

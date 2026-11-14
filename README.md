@@ -65,9 +65,15 @@ Claude Code can end a session without updating anything, so the progress numbers
 Add it to `~/.claude/settings.json`, with the paths quoted and `<overmap>` and `<dir>` replaced by your checkout and instance folder:
 
 ```json
-"Stop": [
-  { "type": "command", "command": "node \"<overmap>/hooks/plan-check.mjs\" --home \"<dir>\"", "timeout": 10 }
-]
+"hooks": {
+  "Stop": [
+    {
+      "hooks": [
+        { "type": "command", "command": "node \"<overmap>/hooks/plan-check.mjs\" --home \"<dir>\"", "timeout": 10 }
+      ]
+    }
+  ]
+}
 ```
 
 `--home` is optional; without it the hook reads `OVERMAP_HOME`, then `~/.overmap`. Details, the `PLAN.md` format and hand tests are in [docs/hook.md](docs/hook.md).
