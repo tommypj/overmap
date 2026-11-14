@@ -1,6 +1,7 @@
 // Links between projects, derived once per scan from the projects' uses, connects and git facts. Pure: no file I/O.
 // Edge = { a, b, kind: 'uses' | 'connects' | 'repo', service? }. A uses edge has b = service = serviceId(...).
-// Service = { id, name, count }: name is the first raw spelling seen, count the projects using it.
+// Service = { id, name, count }: name is the alias target id when any spelling was aliased, otherwise the
+// lexicographically smallest raw spelling; count is the number of distinct projects using it.
 import { norm } from '../lib/paths.mjs';
 import { stripCredentials } from './git.mjs';
 
@@ -65,12 +66,16 @@ export function projectEdges(projects) {
         if (target.id !== p.id) add({ a: p.id, b: target.id, kind: 'connects' });
         continue;
       }
-      const id = serviceId(entryName(text));
+      const raw = entryName(text);
+      const id = serviceId(raw);
       if (!id) continue;
-      if (!services.has(id)) services.set(id, { id, name: entryName(text), count: 0 });
+      if (!services.has(id)) services.set(id, { id, aliased: false, spellings: new Set(), count: 0 });
+      const svc = services.get(id);
+      svc.spellings.add(raw);
+      if (Object.hasOwn(SERVICE_ALIASES, raw.toLowerCase())) svc.aliased = true;
       if (!distinct.has(id)) {
         distinct.add(id);
-        services.get(id).count++;
+        svc.count++;
         add({ a: p.id, b: id, kind: 'uses', service: id });
       }
     }
@@ -98,6 +103,11 @@ export function projectEdges(projects) {
     }
   }
 
-  const sortedServices = [...services.values()].sort((x, y) => y.count - x.count || x.id.localeCompare(y.id));
+  const named = [...services.values()].map((s) => ({
+    id: s.id,
+    name: s.aliased ? s.id : [...s.spellings].sort()[0],
+    count: s.count,
+  }));
+  const sortedServices = named.sort((x, y) => y.count - x.count || x.id.localeCompare(y.id));
   return { edges, services: sortedServices };
 }

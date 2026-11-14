@@ -28,7 +28,7 @@ export function loadRegistry(file) {
       note: e.note ?? null,
       uses: e.uses ?? [],
       connectors: e.connectors ?? {},
-      connects: Array.isArray(e.connects) ? e.connects : [],
+      connects: (e.connects ?? []).map(String),
     });
   }
   return map;

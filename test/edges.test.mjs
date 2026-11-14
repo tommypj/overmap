@@ -23,7 +23,15 @@ test('uses edges and services count', () => {
     { a: 'p1', b: 'vercel', kind: 'uses', service: 'vercel' },
     { a: 'p2', b: 'neon', kind: 'uses', service: 'neon' },
   ]);
-  assert.deepEqual(services.map((s) => [s.id, s.count]), [['neon', 2], ['vercel', 1]]);
+  assert.deepEqual(services.map((s) => [s.id, s.name, s.count]), [['neon', 'neon', 2], ['vercel', 'vercel', 1]]);
+});
+
+test('service name is the smallest raw spelling unless aliased', () => {
+  const { services } = projectEdges([
+    { id: 'p1', uses: ['my mail'], repos: [] },
+    { id: 'p2', uses: ['My Mail'], repos: [] },
+  ]);
+  assert.deepEqual(services, [{ id: 'my-mail', name: 'My Mail', count: 2 }]);
 });
 
 test('a repeated service on one project gives one uses edge', () => {

@@ -68,3 +68,13 @@ test('buildRegistry: note with path ~/code/app resolves to an absolute home; ext
   assert.deepEqual(out.keep.connects, undefined);
   rmSync(d, { recursive: true, force: true });
 });
+
+test('loadRegistry carries connects as strings; [] when absent', () => {
+  const d = tmp();
+  const reg = loadRegistry(writeReg(d, {
+    a: { name: 'A', family: 'F', kind: 'project', home: '/x/a', connects: ['other'] },
+    b: { name: 'B', family: 'F', kind: 'project', home: '/x/b' },
+  }));
+  assert.deepEqual(reg.get('a').connects, ['other']);
+  assert.deepEqual(reg.get('b').connects, []);
+});
