@@ -3,7 +3,8 @@
 import { createServer } from 'node:http';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { readFileSync, statSync } from 'node:fs';
+import { mkdtempSync, readFileSync, statSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadConfig } from './lib/config.mjs';
@@ -16,6 +17,7 @@ import { CONNECTORS } from './connectors/index.mjs';
 import { runConnector, EVERY_MS } from './lib/connector.mjs';
 import { fetchJson } from './lib/http.mjs';
 import { loadRegistry } from './registry.mjs';
+import { makeSample } from './examples/make-sample.mjs';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 
@@ -24,7 +26,7 @@ export function createApp(config, env = process.env, extra = {}) {
   const { secrets: given, ...rest } = extra;
   const secrets = given ?? createSecrets(config.home);
   const routes = createRoutes({ config, env, secrets, getSecret: secrets.getSecret, ...rest });
-  const server = createServer(createHandler({ config, port: config.port, routes }));
+  const server = createServer(createHandler({ config, port: () => config.port, routes }));
   server.on('close', routes.close);
   return server;
 }
@@ -90,6 +92,15 @@ export function startScheduler(config, { run = promisify(execFile), setIntervalF
   return { scan, isRunning: () => running, stop: () => timers.forEach((t) => { clearInterval(t); clearTimeout(t); }) };
 }
 
+// --sample: a fresh invented workspace in a temp folder, scanned once, then served with the scheduler on (unless noSchedule).
+export async function startSample({ port, noSchedule = false, env = process.env } = {}) {
+  const dir = mkdtempSync(join(tmpdir(), 'overmap-sample-'));
+  const { home } = await makeSample(dir);
+  await promisify(execFile)(process.execPath, ['scan.mjs', '--home', home, '--no-size', '--quiet'], { cwd: HERE, windowsHide: true });
+  console.log(`sample workspace in ${dir}`);
+  return startServer({ home, env, port, noSchedule });
+}
+
 // Connector scheduler: one timer per connector, first run 60 s after start (5 s apart), targets serial,
 // a connector never overlaps itself. Failures are recorded by runConnector; nothing here can crash the server.
 export function startConnectorScheduler(config, {
@@ -140,7 +151,7 @@ export function startConnectorScheduler(config, {
 // Options: home (instance folder), port (overrides config.port), noSchedule (or OVERMAP_NO_SCHEDULE=1).
 export function startServer({ home = resolveHome(), env = process.env, onError, port: portOverride, noSchedule: noScheduleOpt = false } = {}) {
   const loaded = loadConfig(home);
-  const config = portOverride ? { ...loaded, port: portOverride } : loaded;
+  const config = portOverride !== undefined ? { ...loaded, port: portOverride } : loaded;
   const port = config.port;
   const noSchedule = noScheduleOpt || env.OVERMAP_NO_SCHEDULE === '1';
   const secrets = createSecrets(config.home);
@@ -152,7 +163,11 @@ export function startServer({ home = resolveHome(), env = process.env, onError, 
     console.error(msg);
     if (onError) onError(err, msg); else process.exit(2);
   });
-  server.listen(port, '127.0.0.1', () => console.log(`dashboard on http://127.0.0.1:${port}`));
+  // port 0 asks the OS for a free port; the ready line and the Host check use the port actually bound.
+  server.listen(port, '127.0.0.1', () => {
+    config.port = server.address().port;
+    console.log(`dashboard on http://127.0.0.1:${config.port}`);
+  });
   if (!noSchedule) {
     const cs = startConnectorScheduler(config, { secret: secrets.getSecret });
     server.on('close', cs.stop);
@@ -161,8 +176,25 @@ export function startServer({ home = resolveHome(), env = process.env, onError, 
 }
 
 if (process.argv[1] && resolve(process.argv[1]).toLowerCase() === resolve(fileURLToPath(import.meta.url)).toLowerCase()) {
-  const home = resolveHome();
-  ensureHome(home);
   const i = process.argv.indexOf('--port');
-  startServer({ home, port: i >= 0 ? Number(process.argv[i + 1]) || undefined : undefined, noSchedule: process.argv.includes('--no-schedule') });
+  const port = i >= 0 ? Number(process.argv[i + 1]) : undefined;
+  if (port !== undefined && !(Number.isInteger(port) && port >= 0 && port <= 65535)) {
+    console.error('--port needs a whole number from 0 to 65535');
+    process.exit(2);
+  }
+  const noSchedule = process.argv.includes('--no-schedule');
+  if (process.argv.includes('--sample')) {
+    if (process.argv.includes('--home')) {
+      console.error('--sample cannot be combined with --home');
+      process.exit(2);
+    }
+    startSample({ port, noSchedule }).catch((e) => {
+      console.error(`sample failed: ${e.message}`);
+      process.exit(1);
+    });
+  } else {
+    const home = resolveHome();
+    ensureHome(home);
+    startServer({ home, port, noSchedule });
+  }
 }

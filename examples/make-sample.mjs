@@ -1,0 +1,73 @@
+// Builds the invented "Northwind Bikes" sample workspace (examples/sample/) into a folder:
+//   <dir>/vault/Projects/*.md   six project notes (path placeholders filled in)
+//   <dir>/projects/<id>/        plans, test results, graphs; api-worker is a git worktree of shop-api
+//   <dir>/home/                 instance folder: overmap.config.json and registry.json
+// Used by serve.mjs --sample and test/sample.test.mjs. Nothing here touches global git config.
+import { execFileSync } from 'node:child_process';
+import { cpSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { buildRegistry } from '../make-registry.mjs';
+import { norm } from '../lib/paths.mjs';
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const SAMPLE = join(HERE, 'sample');
+const PLACEHOLDER = '@PROJECTS@';
+export const PROJECTS = ['storefront', 'shop-api', 'api-worker', 'mobile-app', 'docs-site', 'ops-tool'];
+const WORKTREE_OF = 'shop-api';
+const WORKTREE = 'api-worker';
+
+// Synchronous git (no shell, no console window). Throws when git fails.
+const runSync = (file, args, opts = {}) => execFileSync(file, args, { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], ...opts });
+
+export async function makeSample(dir, { git = true, run = runSync } = {}) {
+  const vault = join(dir, 'vault');
+  const vaultProjectsDir = join(vault, 'Projects');
+  const projectsDir = join(dir, 'projects');
+  const home = join(dir, 'home');
+  for (const d of [vaultProjectsDir, projectsDir, home]) mkdirSync(d, { recursive: true });
+
+  const copyProject = (id) => cpSync(join(SAMPLE, id), join(projectsDir, id), { recursive: true });
+  // With git, the worktree folder is created by `git worktree add`, so its files are copied after that.
+  for (const id of PROJECTS) if (!(git && id === WORKTREE)) copyProject(id);
+
+  if (git) {
+    for (const id of PROJECTS) {
+      if (id === WORKTREE) continue;
+      const cwd = join(projectsDir, id);
+      run('git', ['init', '-q'], { cwd });
+      run('git', ['-c', 'user.name=sample', '-c', 'user.email=sample@example.com', 'commit', '-q', '--allow-empty', '-m', 'init'], { cwd });
+    }
+    run('git', ['-C', join(projectsDir, WORKTREE_OF), 'worktree', 'add', '-q', join(projectsDir, WORKTREE), '-b', 'worker']);
+    copyProject(WORKTREE);
+  }
+
+  for (const id of PROJECTS) {
+    const text = readFileSync(join(SAMPLE, 'notes', `${id}.md`), 'utf8').split(PLACEHOLDER).join(norm(projectsDir));
+    writeFileSync(join(vaultProjectsDir, `${id}.md`), text, 'utf8');
+  }
+
+  writeFileSync(join(home, 'overmap.config.json'), JSON.stringify({
+    vaultProjectsDir: norm(vaultProjectsDir),
+    projectsDir: norm(projectsDir),
+    allowedLogin: '',
+    port: 3210,
+    proxyHost: null,
+    architectureFile: null,
+    mocFile: null,
+    memoryRoot: null,
+  }, null, 2) + '\n', 'utf8');
+  buildRegistry({ vaultProjectsDir, registryFile: join(home, 'registry.json') });
+
+  return { home, vault, projectsDir };
+}
+
+if (process.argv[1] && resolve(process.argv[1]).toLowerCase() === resolve(fileURLToPath(import.meta.url)).toLowerCase()) {
+  const dir = process.argv[2];
+  if (!dir) {
+    console.error('usage: node examples/make-sample.mjs <empty-folder>');
+    process.exit(2);
+  }
+  const { home } = await makeSample(resolve(dir));
+  console.log(`sample instance: ${home}`);
+}

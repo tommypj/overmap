@@ -1,0 +1,1565 @@
+{
+ "directed": true,
+ "multigraph": false,
+ "graph": {},
+ "nodes": [
+  {
+   "id": "n000",
+   "label": "sync_0",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_0.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n001",
+   "label": "reports_0",
+   "community": 1,
+   "community_name": "reports",
+   "source_file": "reports/reports_0.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n002",
+   "label": "auth_0",
+   "community": 2,
+   "community_name": "auth",
+   "source_file": "auth/auth_0.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n003",
+   "label": "mailer_0",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_0.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n004",
+   "label": "sync_1",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_1.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n005",
+   "label": "mailer_1",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_1.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n006",
+   "label": "sync_2",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_2.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n007",
+   "label": "mailer_2",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_2.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n008",
+   "label": "sync_3",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_3.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n009",
+   "label": "auth_1",
+   "community": 2,
+   "community_name": "auth",
+   "source_file": "auth/auth_1.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n010",
+   "label": "sync_4",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_4.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n011",
+   "label": "mailer_3",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_3.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n012",
+   "label": "auth_2",
+   "community": 2,
+   "community_name": "auth",
+   "source_file": "auth/auth_2.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n013",
+   "label": "mailer_4",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_4.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n014",
+   "label": "auth_3",
+   "community": 2,
+   "community_name": "auth",
+   "source_file": "auth/auth_3.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n015",
+   "label": "mailer_5",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_5.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n016",
+   "label": "auth_4",
+   "community": 2,
+   "community_name": "auth",
+   "source_file": "auth/auth_4.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n017",
+   "label": "mailer_6",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_6.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n018",
+   "label": "mailer_7",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_7.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n019",
+   "label": "auth_5",
+   "community": 2,
+   "community_name": "auth",
+   "source_file": "auth/auth_5.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n020",
+   "label": "sync_5",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_5.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n021",
+   "label": "mailer_8",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_8.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n022",
+   "label": "sync_6",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_6.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n023",
+   "label": "auth_6",
+   "community": 2,
+   "community_name": "auth",
+   "source_file": "auth/auth_6.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n024",
+   "label": "reports_1",
+   "community": 1,
+   "community_name": "reports",
+   "source_file": "reports/reports_1.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n025",
+   "label": "mailer_9",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_9.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n026",
+   "label": "mailer_10",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_10.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n027",
+   "label": "mailer_11",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_11.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n028",
+   "label": "sync_7",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_7.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n029",
+   "label": "auth_7",
+   "community": 2,
+   "community_name": "auth",
+   "source_file": "auth/auth_7.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n030",
+   "label": "reports_2",
+   "community": 1,
+   "community_name": "reports",
+   "source_file": "reports/reports_2.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n031",
+   "label": "sync_8",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_8.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n032",
+   "label": "sync_9",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_9.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n033",
+   "label": "auth_8",
+   "community": 2,
+   "community_name": "auth",
+   "source_file": "auth/auth_8.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n034",
+   "label": "sync_10",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_10.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n035",
+   "label": "sync_11",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_11.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n036",
+   "label": "mailer_12",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_12.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n037",
+   "label": "reports_3",
+   "community": 1,
+   "community_name": "reports",
+   "source_file": "reports/reports_3.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n038",
+   "label": "mailer_13",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_13.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n039",
+   "label": "mailer_14",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_14.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n040",
+   "label": "sync_12",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_12.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n041",
+   "label": "mailer_15",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_15.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n042",
+   "label": "mailer_16",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_16.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n043",
+   "label": "reports_4",
+   "community": 1,
+   "community_name": "reports",
+   "source_file": "reports/reports_4.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n044",
+   "label": "sync_13",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_13.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n045",
+   "label": "sync_14",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_14.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n046",
+   "label": "reports_5",
+   "community": 1,
+   "community_name": "reports",
+   "source_file": "reports/reports_5.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n047",
+   "label": "mailer_17",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_17.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n048",
+   "label": "sync_15",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_15.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n049",
+   "label": "mailer_18",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_18.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n050",
+   "label": "auth_9",
+   "community": 2,
+   "community_name": "auth",
+   "source_file": "auth/auth_9.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n051",
+   "label": "mailer_19",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_19.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n052",
+   "label": "mailer_20",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_20.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n053",
+   "label": "sync_16",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_16.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n054",
+   "label": "mailer_21",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_21.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n055",
+   "label": "mailer_22",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_22.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n056",
+   "label": "mailer_23",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_23.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n057",
+   "label": "mailer_24",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_24.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n058",
+   "label": "reports_6",
+   "community": 1,
+   "community_name": "reports",
+   "source_file": "reports/reports_6.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n059",
+   "label": "auth_10",
+   "community": 2,
+   "community_name": "auth",
+   "source_file": "auth/auth_10.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n060",
+   "label": "mailer_25",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_25.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n061",
+   "label": "auth_11",
+   "community": 2,
+   "community_name": "auth",
+   "source_file": "auth/auth_11.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n062",
+   "label": "reports_7",
+   "community": 1,
+   "community_name": "reports",
+   "source_file": "reports/reports_7.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n063",
+   "label": "sync_17",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_17.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n064",
+   "label": "auth_12",
+   "community": 2,
+   "community_name": "auth",
+   "source_file": "auth/auth_12.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n065",
+   "label": "sync_18",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_18.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n066",
+   "label": "mailer_26",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_26.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n067",
+   "label": "reports_8",
+   "community": 1,
+   "community_name": "reports",
+   "source_file": "reports/reports_8.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n068",
+   "label": "mailer_27",
+   "community": 3,
+   "community_name": "mailer",
+   "source_file": "mailer/mailer_27.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n069",
+   "label": "sync_19",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_19.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n070",
+   "label": "sync_20",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_20.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n071",
+   "label": "reports_9",
+   "community": 1,
+   "community_name": "reports",
+   "source_file": "reports/reports_9.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n072",
+   "label": "auth_13",
+   "community": 2,
+   "community_name": "auth",
+   "source_file": "auth/auth_13.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n073",
+   "label": "sync_21",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_21.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n074",
+   "label": "reports_10",
+   "community": 1,
+   "community_name": "reports",
+   "source_file": "reports/reports_10.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n075",
+   "label": "sync_22",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_22.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n076",
+   "label": "reports_11",
+   "community": 1,
+   "community_name": "reports",
+   "source_file": "reports/reports_11.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n077",
+   "label": "sync_23",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_23.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n078",
+   "label": "auth_14",
+   "community": 2,
+   "community_name": "auth",
+   "source_file": "auth/auth_14.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n079",
+   "label": "sync_24",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_24.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n080",
+   "label": "sync_25",
+   "community": 0,
+   "community_name": "sync",
+   "source_file": "sync/sync_25.ts",
+   "file_type": "code"
+  },
+  {
+   "id": "n081",
+   "label": "auth_15",
+   "community": 2,
+   "community_name": "auth",
+   "source_file": "auth/auth_15.ts",
+   "file_type": "code"
+  }
+ ],
+ "edges": [
+  {
+   "source": "n000",
+   "target": "n028",
+   "relation": "imports",
+   "weight": 3
+  },
+  {
+   "source": "n000",
+   "target": "n010",
+   "relation": "uses",
+   "weight": 3
+  },
+  {
+   "source": "n001",
+   "target": "n067",
+   "relation": "imports",
+   "weight": 3
+  },
+  {
+   "source": "n001",
+   "target": "n076",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n002",
+   "target": "n014",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n002",
+   "target": "n009",
+   "relation": "uses",
+   "weight": 2
+  },
+  {
+   "source": "n003",
+   "target": "n021",
+   "relation": "imports",
+   "weight": 2
+  },
+  {
+   "source": "n003",
+   "target": "n025",
+   "relation": "imports",
+   "weight": 2
+  },
+  {
+   "source": "n004",
+   "target": "n022",
+   "relation": "uses",
+   "weight": 2
+  },
+  {
+   "source": "n004",
+   "target": "n006",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n005",
+   "target": "n003",
+   "relation": "imports",
+   "weight": 2
+  },
+  {
+   "source": "n006",
+   "target": "n032",
+   "relation": "uses",
+   "weight": 2
+  },
+  {
+   "source": "n007",
+   "target": "n041",
+   "relation": "calls",
+   "weight": 2
+  },
+  {
+   "source": "n008",
+   "target": "n031",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n009",
+   "target": "n072",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n010",
+   "target": "n008",
+   "relation": "uses",
+   "weight": 3
+  },
+  {
+   "source": "n010",
+   "target": "n070",
+   "relation": "calls",
+   "weight": 2
+  },
+  {
+   "source": "n012",
+   "target": "n019",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n012",
+   "target": "n072",
+   "relation": "uses",
+   "weight": 1
+  },
+  {
+   "source": "n012",
+   "target": "n014",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n013",
+   "target": "n052",
+   "relation": "uses",
+   "weight": 2
+  },
+  {
+   "source": "n013",
+   "target": "n003",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n014",
+   "target": "n016",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n014",
+   "target": "n026",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n014",
+   "target": "n050",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n015",
+   "target": "n007",
+   "relation": "uses",
+   "weight": 3
+  },
+  {
+   "source": "n016",
+   "target": "n002",
+   "relation": "calls",
+   "weight": 1
+  },
+  {
+   "source": "n016",
+   "target": "n064",
+   "relation": "uses",
+   "weight": 1
+  },
+  {
+   "source": "n016",
+   "target": "n061",
+   "relation": "calls",
+   "weight": 2
+  },
+  {
+   "source": "n017",
+   "target": "n027",
+   "relation": "uses",
+   "weight": 3
+  },
+  {
+   "source": "n018",
+   "target": "n066",
+   "relation": "uses",
+   "weight": 1
+  },
+  {
+   "source": "n018",
+   "target": "n011",
+   "relation": "calls",
+   "weight": 2
+  },
+  {
+   "source": "n019",
+   "target": "n021",
+   "relation": "calls",
+   "weight": 2
+  },
+  {
+   "source": "n019",
+   "target": "n061",
+   "relation": "imports",
+   "weight": 2
+  },
+  {
+   "source": "n020",
+   "target": "n048",
+   "relation": "calls",
+   "weight": 1
+  },
+  {
+   "source": "n021",
+   "target": "n057",
+   "relation": "uses",
+   "weight": 1
+  },
+  {
+   "source": "n021",
+   "target": "n013",
+   "relation": "uses",
+   "weight": 1
+  },
+  {
+   "source": "n021",
+   "target": "n053",
+   "relation": "uses",
+   "weight": 2
+  },
+  {
+   "source": "n022",
+   "target": "n045",
+   "relation": "calls",
+   "weight": 1
+  },
+  {
+   "source": "n023",
+   "target": "n002",
+   "relation": "uses",
+   "weight": 1
+  },
+  {
+   "source": "n023",
+   "target": "n061",
+   "relation": "calls",
+   "weight": 1
+  },
+  {
+   "source": "n024",
+   "target": "n043",
+   "relation": "calls",
+   "weight": 2
+  },
+  {
+   "source": "n024",
+   "target": "n062",
+   "relation": "uses",
+   "weight": 2
+  },
+  {
+   "source": "n025",
+   "target": "n062",
+   "relation": "calls",
+   "weight": 1
+  },
+  {
+   "source": "n025",
+   "target": "n056",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n026",
+   "target": "n066",
+   "relation": "imports",
+   "weight": 3
+  },
+  {
+   "source": "n026",
+   "target": "n013",
+   "relation": "calls",
+   "weight": 2
+  },
+  {
+   "source": "n027",
+   "target": "n013",
+   "relation": "imports",
+   "weight": 2
+  },
+  {
+   "source": "n027",
+   "target": "n080",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n027",
+   "target": "n056",
+   "relation": "calls",
+   "weight": 1
+  },
+  {
+   "source": "n028",
+   "target": "n070",
+   "relation": "imports",
+   "weight": 3
+  },
+  {
+   "source": "n029",
+   "target": "n025",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n030",
+   "target": "n024",
+   "relation": "imports",
+   "weight": 3
+  },
+  {
+   "source": "n031",
+   "target": "n028",
+   "relation": "uses",
+   "weight": 1
+  },
+  {
+   "source": "n032",
+   "target": "n079",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n033",
+   "target": "n023",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n033",
+   "target": "n041",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n033",
+   "target": "n019",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n034",
+   "target": "n075",
+   "relation": "imports",
+   "weight": 2
+  },
+  {
+   "source": "n034",
+   "target": "n020",
+   "relation": "imports",
+   "weight": 3
+  },
+  {
+   "source": "n035",
+   "target": "n004",
+   "relation": "imports",
+   "weight": 2
+  },
+  {
+   "source": "n035",
+   "target": "n081",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n036",
+   "target": "n027",
+   "relation": "uses",
+   "weight": 1
+  },
+  {
+   "source": "n036",
+   "target": "n005",
+   "relation": "imports",
+   "weight": 3
+  },
+  {
+   "source": "n036",
+   "target": "n047",
+   "relation": "uses",
+   "weight": 1
+  },
+  {
+   "source": "n037",
+   "target": "n030",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n037",
+   "target": "n046",
+   "relation": "imports",
+   "weight": 3
+  },
+  {
+   "source": "n038",
+   "target": "n051",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n039",
+   "target": "n021",
+   "relation": "calls",
+   "weight": 1
+  },
+  {
+   "source": "n039",
+   "target": "n056",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n040",
+   "target": "n044",
+   "relation": "uses",
+   "weight": 2
+  },
+  {
+   "source": "n040",
+   "target": "n000",
+   "relation": "imports",
+   "weight": 2
+  },
+  {
+   "source": "n041",
+   "target": "n038",
+   "relation": "uses",
+   "weight": 3
+  },
+  {
+   "source": "n041",
+   "target": "n042",
+   "relation": "calls",
+   "weight": 2
+  },
+  {
+   "source": "n041",
+   "target": "n015",
+   "relation": "calls",
+   "weight": 2
+  },
+  {
+   "source": "n042",
+   "target": "n051",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n042",
+   "target": "n013",
+   "relation": "imports",
+   "weight": 2
+  },
+  {
+   "source": "n042",
+   "target": "n052",
+   "relation": "calls",
+   "weight": 2
+  },
+  {
+   "source": "n043",
+   "target": "n001",
+   "relation": "calls",
+   "weight": 2
+  },
+  {
+   "source": "n044",
+   "target": "n031",
+   "relation": "uses",
+   "weight": 3
+  },
+  {
+   "source": "n044",
+   "target": "n000",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n044",
+   "target": "n045",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n045",
+   "target": "n000",
+   "relation": "uses",
+   "weight": 2
+  },
+  {
+   "source": "n045",
+   "target": "n076",
+   "relation": "uses",
+   "weight": 1
+  },
+  {
+   "source": "n046",
+   "target": "n030",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n047",
+   "target": "n052",
+   "relation": "calls",
+   "weight": 2
+  },
+  {
+   "source": "n047",
+   "target": "n075",
+   "relation": "uses",
+   "weight": 2
+  },
+  {
+   "source": "n048",
+   "target": "n076",
+   "relation": "uses",
+   "weight": 2
+  },
+  {
+   "source": "n048",
+   "target": "n073",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n048",
+   "target": "n035",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n049",
+   "target": "n041",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n050",
+   "target": "n059",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n050",
+   "target": "n061",
+   "relation": "calls",
+   "weight": 1
+  },
+  {
+   "source": "n051",
+   "target": "n066",
+   "relation": "uses",
+   "weight": 2
+  },
+  {
+   "source": "n051",
+   "target": "n038",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n052",
+   "target": "n066",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n053",
+   "target": "n070",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n054",
+   "target": "n049",
+   "relation": "imports",
+   "weight": 2
+  },
+  {
+   "source": "n055",
+   "target": "n003",
+   "relation": "imports",
+   "weight": 2
+  },
+  {
+   "source": "n055",
+   "target": "n011",
+   "relation": "imports",
+   "weight": 2
+  },
+  {
+   "source": "n056",
+   "target": "n066",
+   "relation": "imports",
+   "weight": 2
+  },
+  {
+   "source": "n057",
+   "target": "n014",
+   "relation": "calls",
+   "weight": 1
+  },
+  {
+   "source": "n057",
+   "target": "n025",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n057",
+   "target": "n052",
+   "relation": "calls",
+   "weight": 1
+  },
+  {
+   "source": "n058",
+   "target": "n001",
+   "relation": "uses",
+   "weight": 3
+  },
+  {
+   "source": "n059",
+   "target": "n014",
+   "relation": "calls",
+   "weight": 1
+  },
+  {
+   "source": "n059",
+   "target": "n077",
+   "relation": "uses",
+   "weight": 2
+  },
+  {
+   "source": "n059",
+   "target": "n061",
+   "relation": "uses",
+   "weight": 3
+  },
+  {
+   "source": "n060",
+   "target": "n047",
+   "relation": "imports",
+   "weight": 2
+  },
+  {
+   "source": "n060",
+   "target": "n042",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n061",
+   "target": "n002",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n062",
+   "target": "n058",
+   "relation": "uses",
+   "weight": 1
+  },
+  {
+   "source": "n063",
+   "target": "n074",
+   "relation": "uses",
+   "weight": 2
+  },
+  {
+   "source": "n063",
+   "target": "n035",
+   "relation": "uses",
+   "weight": 2
+  },
+  {
+   "source": "n064",
+   "target": "n059",
+   "relation": "imports",
+   "weight": 2
+  },
+  {
+   "source": "n064",
+   "target": "n072",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n065",
+   "target": "n067",
+   "relation": "calls",
+   "weight": 2
+  },
+  {
+   "source": "n065",
+   "target": "n063",
+   "relation": "imports",
+   "weight": 3
+  },
+  {
+   "source": "n065",
+   "target": "n077",
+   "relation": "uses",
+   "weight": 2
+  },
+  {
+   "source": "n066",
+   "target": "n054",
+   "relation": "imports",
+   "weight": 2
+  },
+  {
+   "source": "n066",
+   "target": "n038",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n067",
+   "target": "n058",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n068",
+   "target": "n021",
+   "relation": "calls",
+   "weight": 2
+  },
+  {
+   "source": "n068",
+   "target": "n040",
+   "relation": "uses",
+   "weight": 2
+  },
+  {
+   "source": "n068",
+   "target": "n025",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n069",
+   "target": "n079",
+   "relation": "uses",
+   "weight": 2
+  },
+  {
+   "source": "n070",
+   "target": "n022",
+   "relation": "uses",
+   "weight": 2
+  },
+  {
+   "source": "n070",
+   "target": "n004",
+   "relation": "imports",
+   "weight": 3
+  },
+  {
+   "source": "n071",
+   "target": "n058",
+   "relation": "uses",
+   "weight": 3
+  },
+  {
+   "source": "n071",
+   "target": "n074",
+   "relation": "calls",
+   "weight": 1
+  },
+  {
+   "source": "n072",
+   "target": "n016",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n073",
+   "target": "n010",
+   "relation": "uses",
+   "weight": 1
+  },
+  {
+   "source": "n073",
+   "target": "n028",
+   "relation": "uses",
+   "weight": 1
+  },
+  {
+   "source": "n073",
+   "target": "n065",
+   "relation": "imports",
+   "weight": 3
+  },
+  {
+   "source": "n074",
+   "target": "n001",
+   "relation": "imports",
+   "weight": 3
+  },
+  {
+   "source": "n074",
+   "target": "n043",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n074",
+   "target": "n046",
+   "relation": "imports",
+   "weight": 2
+  },
+  {
+   "source": "n075",
+   "target": "n008",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n075",
+   "target": "n077",
+   "relation": "calls",
+   "weight": 1
+  },
+  {
+   "source": "n076",
+   "target": "n024",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n077",
+   "target": "n000",
+   "relation": "uses",
+   "weight": 1
+  },
+  {
+   "source": "n077",
+   "target": "n073",
+   "relation": "calls",
+   "weight": 1
+  },
+  {
+   "source": "n078",
+   "target": "n001",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n078",
+   "target": "n061",
+   "relation": "uses",
+   "weight": 3
+  },
+  {
+   "source": "n079",
+   "target": "n042",
+   "relation": "imports",
+   "weight": 1
+  },
+  {
+   "source": "n080",
+   "target": "n079",
+   "relation": "uses",
+   "weight": 3
+  },
+  {
+   "source": "n080",
+   "target": "n077",
+   "relation": "uses",
+   "weight": 2
+  },
+  {
+   "source": "n081",
+   "target": "n002",
+   "relation": "calls",
+   "weight": 1
+  },
+  {
+   "source": "n081",
+   "target": "n080",
+   "relation": "calls",
+   "weight": 3
+  },
+  {
+   "source": "n081",
+   "target": "n017",
+   "relation": "calls",
+   "weight": 2
+  }
+ ]
+}

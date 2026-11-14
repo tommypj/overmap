@@ -26,12 +26,14 @@ function closeSoon(req) {
 
 // routes: { get: async (ctx) => void } keyed by exact path or prefix handlers in `match`.
 export function createHandler({ config, port, routes }) {
+  // port may be a function so the bound port can be read after listen (serve --port 0).
+  const portNow = () => (typeof port === 'function' ? port() : port);
   return async function handle(req, res) {
     res.setHeader('x-robots-tag', 'noindex');
     res.setHeader('x-content-type-options', 'nosniff');
     res.setHeader('content-security-policy', CSP);
     try {
-      if (!hostOk(req, port, config.proxyHost) || classify(req, config) === null) {
+      if (!hostOk(req, portNow(), config.proxyHost) || classify(req, config) === null) {
         sendJson(req, res, 403, { error: 'not allowed from here' });
         return;
       }
@@ -47,7 +49,7 @@ export function createHandler({ config, port, routes }) {
           sendJson(req, res, 405, { error: 'method not allowed' });
           return;
         }
-        if (!originOk(req, port, config.proxyHost)) {
+        if (!originOk(req, portNow(), config.proxyHost)) {
           sendJson(req, res, 403, { error: 'bad origin' });
           return;
         }

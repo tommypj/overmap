@@ -1,0 +1,9 @@
+{
+  "at": "2026-11-11T14:02:00.000Z",
+  "passed": 19,
+  "failed": 0,
+  "skipped": 0,
+  "total": 19,
+  "durationMs": 3370,
+  "command": "node --test"
+}
