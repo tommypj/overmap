@@ -59,6 +59,45 @@ test('pinned nodes do not move', () => {
   assert.deepEqual(pos.get('a'), { x: 100, y: 120 });
 });
 
+// A random graph: n nodes of mixed size, about 1.2n random edges.
+function randomGraph(n, seed) {
+  const rng = mulberry32(seed);
+  const ns = Array.from({ length: n }, (_, i) => ({ id: `n${i}`, size: 1 + Math.floor(rng() * 20) }));
+  const es = [];
+  for (let i = 0; i < n * 1.2; i++) {
+    const a = Math.floor(rng() * n);
+    const b = Math.floor(rng() * n);
+    if (a !== b) es.push({ a: `n${a}`, b: `n${b}`, weight: 1 + Math.floor(rng() * 4) });
+  }
+  return { ns, es };
+}
+
+test('zoomed-out layouts stay off the box edge and never overlap (n=16, n=40)', () => {
+  const W = 960;
+  const H = 560;
+  const radius = (n) => 12 + 4 * Math.sqrt(n.size ?? 1);
+  for (const n of [16, 40]) {
+    for (const seed of [1, 2, 3]) {
+      const { ns, es } = randomGraph(n, seed * 100 + n);
+      const pos = forceLayout(ns, es, { width: W, height: H, seed: 1, radius });
+      const onEdge = ns.filter((nd) => {
+        const { x, y } = pos.get(nd.id);
+        const r = radius(nd);
+        return x - r < 1 || W - r - x < 1 || y - r < 1 || H - r - y < 1;
+      }).length;
+      assert.ok(onEdge <= n * 0.1, `n=${n} seed=${seed}: ${onEdge}/${n} on the box edge`);
+      for (let i = 0; i < n; i++) {
+        for (let j = i + 1; j < n; j++) {
+          const a = pos.get(ns[i].id);
+          const b = pos.get(ns[j].id);
+          const d = Math.hypot(a.x - b.x, a.y - b.y);
+          assert.ok(d >= radius(ns[i]) + radius(ns[j]), `n=${n} seed=${seed}: ${ns[i].id} overlaps ${ns[j].id}`);
+        }
+      }
+    }
+  }
+});
+
 test('empty input gives an empty layout', () => {
   assert.equal(forceLayout([], [], { width: 100, height: 100 }).size, 0);
 });

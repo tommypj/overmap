@@ -13,9 +13,14 @@ export function mulberry32(seed) {
 
 // Fruchterman-Reingold: k = C * sqrt(area / n). Springs (SPRING) are tuned
 // against k so connected pairs settle near their rest length, not the box.
-const C = 0.6;
-const GRAVITY = 0.02;
+// Repulsion stops beyond 2k, so distant clusters do not push each other into the
+// walls; a soft wall (WALL px deep) pushes inward before the hard clamp, and a final
+// separation pass keeps circles GAP px apart.
+const C = 0.45;
+const GRAVITY = 0.05;
 const SPRING = 2;
+const WALL = 40;
+const GAP = 4;
 
 export function forceLayout(nodes, edges, {
   width,
@@ -63,7 +68,7 @@ export function forceLayout(nodes, edges, {
     for (let i = 0; i < n; i++) {
       for (let j = i + 1; j < n; j++) {
         const { ux, uy, d } = direction(pos[i].x - pos[j].x, pos[i].y - pos[j].y);
-        const f = k2 / d;
+        const f = d < 2 * k ? k2 / d : 0;
         dx[i] += ux * f;
         dy[i] += uy * f;
         dx[j] -= ux * f;
@@ -82,16 +87,44 @@ export function forceLayout(nodes, edges, {
       if (isPinned[i]) continue;
       dx[i] += (cx - pos[i].x) * GRAVITY;
       dy[i] += (cy - pos[i].y) * GRAVITY;
+      const { mx, my } = half(i);
+      dx[i] += Math.max(0, WALL - (pos[i].x - mx)) - Math.max(0, WALL - (width - mx - pos[i].x));
+      dy[i] += Math.max(0, WALL - (pos[i].y - my)) - Math.max(0, WALL - (height - my - pos[i].y));
       const m = Math.hypot(dx[i], dy[i]);
       if (m > 0) {
         const s = Math.min(m, temp) / m;
         pos[i].x += dx[i] * s;
         pos[i].y += dy[i] * s;
       }
-      const { mx, my } = half(i);
       pos[i].x = clamp(pos[i].x, mx, width - mx);
       pos[i].y = clamp(pos[i].y, my, height - my);
     }
+  }
+
+  // Separation: push overlapping circles apart (a pinned node never moves).
+  for (let sweep = 0; sweep < 100; sweep++) {
+    let moved = false;
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        if (isPinned[i] && isPinned[j]) continue;
+        const { ux, uy, d } = direction(pos[i].x - pos[j].x, pos[i].y - pos[j].y);
+        const overlap = r[i] + r[j] + GAP - d;
+        if (overlap <= 0) continue;
+        const si = isPinned[j] ? 1 : isPinned[i] ? 0 : 0.5;
+        pos[i].x += ux * overlap * si;
+        pos[i].y += uy * overlap * si;
+        pos[j].x -= ux * overlap * (1 - si);
+        pos[j].y -= uy * overlap * (1 - si);
+        for (const q of [i, j]) {
+          if (isPinned[q]) continue;
+          const { mx, my } = half(q);
+          pos[q].x = clamp(pos[q].x, mx, width - mx);
+          pos[q].y = clamp(pos[q].y, my, height - my);
+        }
+        moved = true;
+      }
+    }
+    if (!moved) break;
   }
 
   return new Map(nodes.map((node, i) => [node.id, { x: pos[i].x, y: pos[i].y }]));

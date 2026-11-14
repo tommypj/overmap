@@ -52,6 +52,48 @@ export function positionsKey(data) {
   return hash.toString(16).padStart(8, '0');
 }
 
+// The zoomed-in graph draws the `limit` largest communities and folds the rest into one
+// "N smaller communities" node (id REST_ID) that carries their edges, weights summed.
+export const REST_ID = '__smaller__';
+export const TOP_COMMUNITIES = 40;
+export const TOP_LABELS = 15;
+export function topCommunities(communities, communityEdges, limit = TOP_COMMUNITIES) {
+  const all = (communities || []).map((c, i) => ({ c, i }));
+  const ranked = [...all].sort((a, b) => (b.c.size ?? 1) - (a.c.size ?? 1) || a.i - b.i).map((x) => x.c);
+  const shown = ranked.slice(0, limit);
+  const hidden = ranked.slice(limit);
+  const keep = new Set(shown.map((c) => c.id));
+  const known = new Set(ranked.map((c) => c.id));
+  const rest = hidden.length
+    ? { id: REST_ID, name: `${hidden.length} smaller communities`, size: hidden.reduce((s, c) => s + (c.size ?? 1), 0), count: hidden.length }
+    : null;
+  const merged = new Map();
+  for (const e of communityEdges || []) {
+    if (!known.has(e.a) || !known.has(e.b)) continue;
+    const a = keep.has(e.a) ? e.a : REST_ID;
+    const b = keep.has(e.b) ? e.b : REST_ID;
+    if (a === b) continue;
+    const [x, y] = a < b ? [a, b] : [b, a];
+    const key = `${x}\n${y}`;
+    const prev = merged.get(key);
+    if (prev) prev.weight += e.weight ?? 1;
+    else merged.set(key, { a: x, b: y, weight: e.weight ?? 1 });
+  }
+  return { shown, rest, edges: [...merged.values()] };
+}
+
+// Community circle radius relative to the largest community, capped at 60 px.
+export const communityRadius = (size, maxSize) =>
+  Math.min(60, 10 + 50 * Math.sqrt(Math.max(size ?? 1, 0) / Math.max(maxSize || 1, 1)));
+
+// The layout box grows past W x H once the circles would cover more than a fifth of it
+// (the viewBox fits the result, so a bigger box only means more room, not smaller text).
+export function layoutBox(radii, fill = 0.2) {
+  const area = radii.reduce((sum, r) => sum + Math.PI * r * r, 0);
+  const s = Math.max(1, Math.sqrt(area / (fill * W * H)));
+  return { width: W * s, height: H * s };
+}
+
 // ---- DOM helpers ----
 function svgEl(tag, attrs = {}, ...kids) {
   const el = document.createElementNS(NS, tag);
@@ -99,7 +141,8 @@ function keyStep(e, els, g) {
 }
 
 // The svg with pan (drag background), zoom (wheel, pinch) and the shared transforms. Returns redraw helpers.
-function canvas(getBox, onBackground) {
+// onZoom(k) runs after every transform change.
+function canvas(getBox, onBackground, onZoom) {
   const svg = svgEl('svg', { class: 'map-svg', role: 'img', 'aria-label': 'Map' });
   const edgeG = svgEl('g', { class: 'map-edges' });
   const nodeG = svgEl('g', { class: 'map-nodes' });
@@ -112,6 +155,7 @@ function canvas(getBox, onBackground) {
     const c = centre();
     zoomG.setAttribute('transform', zoomTransform(view.k, c.x, c.y));
     panG.setAttribute('transform', `translate(${num(view.px)} ${num(view.py)})`);
+    onZoom?.(view.k);
   };
   const toUser = (e) => {
     const p = svg.createSVGPoint();
@@ -371,7 +415,7 @@ export function renderMap(el, ctx, { api: fetchApi = api, storage: given, onSele
 
 // ---- zoomed in ----
 // The Overview is not drawn here: this replaces the whole main area on #/map/<projectId>.
-export async function renderProjectGraph(el, ctx, projectId, { api: fetchApi = api } = {}) {
+export async function renderProjectGraph(el, ctx, projectId, { api: fetchApi = api, showAll = false } = {}) {
   clear(el);
   const p = (ctx.data?.projects || []).find((x) => x.id === projectId);
   el.append(h('nav', { class: 'mapcrumb', 'aria-label': 'Breadcrumb' }, h('a', { href: '#/' }, 'Overmap'), ' \u203a ', p ? p.name : projectId));
@@ -380,13 +424,21 @@ export async function renderProjectGraph(el, ctx, projectId, { api: fetchApi = a
   if (!sum) { el.append(h('p', { class: 'muted' }, `No graph yet. Run: /graphify ${p.home ?? '<home>'}`)); return; }
 
   const comms = sum.communities || [];
-  const nodes = comms.map((c) => ({ id: c.id, kind: 'community', label: c.name, size: c.size ?? 1, graph: true }));
+  const top = topCommunities(comms, sum.communityEdges, showAll ? Infinity : TOP_COMMUNITIES);
+  const maxSize = Math.max(1, ...top.shown.map((c) => c.size ?? 1));
+  const labelled = new Set(top.shown.slice(0, TOP_LABELS).map((c) => c.id));
+  const nodes = top.shown.map((c) => ({ id: c.id, kind: 'community', label: c.name, size: c.size ?? 1, graph: true }));
+  if (top.rest) nodes.push({ id: REST_ID, kind: 'community', label: top.rest.name, size: top.rest.size, graph: true, rest: true });
+  const rOf = (n) => communityRadius(n.rest ? maxSize : n.size, maxSize);
   const byId = new Map(nodes.map((n) => [n.id, n]));
-  const edges = (sum.communityEdges || [])
-    .filter((e) => byId.has(e.a) && byId.has(e.b) && e.a !== e.b)
-    .map((e) => ({ a: e.a, b: e.b, kind: 'connects', weight: e.weight ?? 1 }));
-  const positions = forceLayout(nodes, edges, { width: W, height: H, seed: 1, radius: radiusOf });
-  const box = viewBoxFor(positions, new Map(nodes.map((n) => [n.id, radiusOf(n)])));
+  const edges = top.edges.map((e) => ({ a: e.a, b: e.b, kind: 'connects', weight: e.weight }));
+  const positions = forceLayout(nodes, edges, { ...layoutBox(nodes.map(rOf)), seed: 1, radius: rOf });
+  const box = viewBoxFor(positions, new Map(nodes.map((n) => [n.id, rOf(n)])));
+  const toggleAll = () => renderProjectGraph(el, ctx, projectId, { api: fetchApi, showAll: !showAll });
+  if (top.rest || showAll) {
+    el.querySelector('.mapcrumb').append(' ', h('button', { type: 'button', class: 'btn small map-showall', 'aria-pressed': String(showAll), on: { click: toggleAll } },
+      showAll ? `Show top ${TOP_COMMUNITIES}` : `Show all (${comms.length})`));
+  }
 
   // Gods: small filled circles on a ring inside their community.
   const godsBy = new Map();
@@ -398,7 +450,7 @@ export async function renderProjectGraph(el, ctx, projectId, { api: fetchApi = a
   const godPlaced = [];
   for (const [cid, list] of godsBy) {
     const c0 = positions.get(cid);
-    const r0 = radiusOf(byId.get(cid)) * 0.5;
+    const r0 = rOf(byId.get(cid)) * 0.5;
     list.forEach((g, i) => {
       const a = (2 * Math.PI * i) / list.length;
       godPlaced.push({ g, x: c0.x + Math.cos(a) * r0, y: c0.y + Math.sin(a) * r0 });
@@ -420,8 +472,12 @@ export async function renderProjectGraph(el, ctx, projectId, { api: fetchApi = a
     if (pick !== cm.id) return;
     detail.replaceChildren(communityPanel(cm, r.error ? { error: r.error } : { nodes: r.data.nodes || [], truncated: !!r.data.truncated }, back));
   };
+  const activate = (n) => (n.rest ? toggleAll() : showCommunity(comms.find((x) => x.id === n.id)));
 
-  const c = canvas(() => box, () => { if (pick) back(); });
+  // Labels beyond the largest TOP_LABELS show once the view is zoomed to 1.5x or more.
+  let svgRef = null;
+  const c = canvas(() => box, () => { if (pick) back(); }, (k) => svgRef?.classList.toggle('map-zoomed', k >= 1.5));
+  svgRef = c.svg;
   c.svg.setAttribute('viewBox', vb(box));
   for (const e of edges) {
     const a = positions.get(e.a), b = positions.get(e.b);
@@ -432,14 +488,16 @@ export async function renderProjectGraph(el, ctx, projectId, { api: fetchApi = a
   }
   nodeEls = nodes.map((n) => {
     const p0 = positions.get(n.id);
-    const r = radiusOf(n);
-    const g = svgEl('g', { class: 'map-node map-community', tabindex: 0, role: 'button', 'aria-label': `${n.label}, ${n.size} nodes`, transform: moveTo(p0) },
+    const r = rOf(n);
+    const minor = !n.rest && !labelled.has(n.id);
+    const aria = n.rest ? `${n.label}, ${n.size} nodes, show all` : `${n.label}, ${n.size} nodes`;
+    const g = svgEl('g', { class: `map-node map-community${n.rest ? ' map-rest' : ''}`, tabindex: 0, role: 'button', 'aria-label': aria, transform: moveTo(p0) },
       svgEl('circle', { r: num(r) }),
       svgEl('text', { class: 'map-count', 'text-anchor': 'middle', y: 4 }, String(n.size)),
-      svgEl('text', { class: 'map-label', 'text-anchor': 'middle', y: num(r + 14) }, n.label));
-    g.addEventListener('click', () => showCommunity(comms.find((x) => x.id === n.id)));
+      svgEl('text', { class: `map-label${minor ? ' map-label-minor' : ''}`, 'text-anchor': 'middle', y: num(r + 14) }, n.label));
+    g.addEventListener('click', () => activate(n));
     g.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showCommunity(comms.find((x) => x.id === n.id)); return; }
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(n); return; }
       keyStep(e, nodeEls, g);
     });
     c.nodeG.append(g);

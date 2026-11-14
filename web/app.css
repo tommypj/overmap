@@ -371,13 +371,18 @@ pre.out { margin: 0; height: 40vh; overflow: auto; background: #0d1117; color: #
 .map-count { font-size: 12px; font-weight: 600; fill: var(--text); pointer-events: none; }
 .map-group > circle, .map-community > circle { fill: var(--pill); stroke: var(--accent); stroke-width: 1.5; }
 .map-service > rect { fill: var(--accent-bg); stroke: var(--accent); stroke-width: 1.5; }
-.map-project > circle { --sc: var(--faint); fill: var(--sc); stroke: var(--sc); stroke-width: 1.5; }
+/* The status colour lives on the g so .map-status-* (same g) can override it. */
+.map-project { --sc: var(--faint); }
+.map-project > circle { fill: var(--sc); stroke: var(--sc); stroke-width: 1.5; }
 .map-status-active { --sc: var(--ok); }
 .map-status-paused { --sc: var(--warn); }
 .map-no-graph > circle { fill: var(--bg); stroke-dasharray: 3 3; stroke-width: 2; }
 .map-selected > circle, .map-selected > rect { stroke: var(--accent); stroke-width: 3; }
 .map-god { fill: var(--accent); stroke: var(--bg); stroke-width: 1; }
 .map-graph .map-community > circle { fill: var(--accent-bg); }
+.map-graph .map-rest > circle { fill: var(--pill); stroke-dasharray: 4 3; }
+.map-label-minor { display: none; }
+.map-zoomed .map-label-minor { display: inline; }
 .mapcrumb { color: var(--muted); margin: 0 0 8px; }
 .map-panel-body { display: grid; gap: 6px; }
 .ask-graph { border-top: 1px dashed var(--line); margin-top: 10px; min-height: 4px; }
