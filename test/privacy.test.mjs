@@ -110,6 +110,19 @@ test('positive control: binary extensions are skipped even with a planted hit', 
   }
 });
 
+test('positive control: machine-local base artifacts are not scanned', () => {
+  const tree = tempTree({ 'notes.md': 'clean\n' });
+  try {
+    for (const dir of ['.base-ast', '.base-ast-cache']) {
+      fs.mkdirSync(path.join(tree, dir));
+      fs.writeFileSync(path.join(tree, dir, 'x.txt'), 'open D:/projects/alpha now\n'); // privacy-ok
+    }
+    assert.deepEqual(scanTree(tree), []);
+  } finally {
+    cleanup(tree);
+  }
+});
+
 test('the public tree is clean', () => {
   const findings = scanTree(root, { denylist });
   assert.deepEqual(findings.map((f) => `${f.file}:${f.line} ${f.name} ${f.excerpt}`), []);

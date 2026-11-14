@@ -4,3 +4,6 @@ node_modules/
 *.db-wal
 *.db-shm
 .DS_Store
+.base/
+.base-ast/
+.base-ast-cache/

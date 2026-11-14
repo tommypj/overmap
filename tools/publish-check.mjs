@@ -60,7 +60,7 @@ function walk(dir, ignore, acc) {
   return acc;
 }
 
-export function scanTree(root, { denylist = [], ignore = ['.git', 'node_modules', '.superpowers'] } = {}) {
+export function scanTree(root, { denylist = [], ignore = ['.git', 'node_modules', '.superpowers', '.base', '.base-ast', '.base-ast-cache'] } = {}) {
   const findings = [];
   for (const full of walk(root, ignore, [])) {
     const rel = path.relative(root, full).split(path.sep).join('/');
