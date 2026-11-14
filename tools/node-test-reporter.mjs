@@ -1,4 +1,4 @@
-// node:test reporter that emits test-results.json for the project cockpit.
+// node:test reporter that emits test-results.json for Overmap.
 //
 //   node --test --test-reporter=spec --test-reporter-destination=stdout \
 //     --test-reporter=<overmap>/tools/node-test-reporter.mjs --test-reporter-destination=test-results.json "test/*.test.mjs"
@@ -7,7 +7,7 @@
 // Counts come from the final `test:summary` event (Node 23+); older runtimes fall back to counting pass/fail events.
 import { fromNodeSummary, buildResult, serialize } from './test-results-lib.mjs';
 
-export default async function* cockpitReporter(source) {
+export default async function* OvermapReporter(source) {
   const started = Date.now();
   let summary = null;
   let passed = 0, failed = 0, skipped = 0;

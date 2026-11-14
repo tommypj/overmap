@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Convert a runner's own report into test-results.json for the project cockpit.
+// Convert a runner's own report into test-results.json for Overmap.
 //
 //   node <overmap>/tools/test-results.mjs vitest .vitest.json
 //   node <overmap>/tools/test-results.mjs jest   jest-report.json
@@ -7,7 +7,7 @@
 //
 // Run mode: run the test command first, then convert its report, and exit with the command's own exit code:
 //
-//   node <overmap>/tools/test-results.mjs run vitest %TEMP%/t.json -- npm run test:unit -- --reporter=default --reporter=json --outputFile=%TEMP%/t.json
+//   node <overmap>/tools/test-results.mjs run vitest t.json -- npm run test:unit -- --reporter=default --reporter=json --outputFile=t.json
 //
 // `npm`, `npx` and `node` as the first word resolve to the npm/npx CLI next to this node (no shell involved).
 //

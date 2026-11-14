@@ -62,9 +62,9 @@ test('sanitiseError masks every secret shape', () => {
     google: 'token ya29.a0AfH6SMBxyz-123_456',
     refresh: 'refresh 1//0gAbCdEf-GhIj',
     sentry: 'key sntrys_eyABCDEF12345 and sntryu_abc123def',
-    jwt: 'jwt eyJhbGciOi.eyJzdWIiOiIx.SflKxwRJSMeKKF2QT4',
+    jwt: 'jwt eyJhbGciOi.eyJzdWIiOiIx.SflKxwRJSMeKKF2QT4', // privacy-ok
   };
-  const secrets = ['SUPERSECRETKEY', 'TOPSECRET123', 'hunter22', 'ya29.a0AfH6SMBxyz-123_456', '1//0gAbCdEf-GhIj', 'abc123def456', 'dXNlcjpwYXNz', 'eyJhbGciOi.eyJzdWIiOiIx.SflKxwRJSMeKKF2QT4', 'sntrys_eyABCDEF12345', 'sntryu_abc123def'];
+  const secrets = ['SUPERSECRETKEY', 'TOPSECRET123', 'hunter22', 'ya29.a0AfH6SMBxyz-123_456', '1//0gAbCdEf-GhIj', 'abc123def456', 'dXNlcjpwYXNz', 'eyJhbGciOi.eyJzdWIiOiIx.SflKxwRJSMeKKF2QT4', 'sntrys_eyABCDEF12345', 'sntryu_abc123def']; // privacy-ok
   for (const [name, text] of Object.entries(cases)) {
     const out = sanitiseError(text);
     for (const s of secrets) assert.ok(!out.includes(s), `${name}: ${out}`);

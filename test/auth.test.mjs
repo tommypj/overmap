@@ -4,7 +4,7 @@ import { classify, hostOk } from '../server/auth.mjs';
 
 const config = { allowedLogin: 'me@example.com' };
 const req = (remoteAddress, headers = {}) => ({ socket: { remoteAddress }, headers });
-const tn = { 'x-forwarded-proto': 'https', 'x-forwarded-for': '100.64.0.7', 'tailscale-user-login': 'me@example.com' };
+const tn = { 'x-forwarded-proto': 'https', 'x-forwarded-for': '100.64.0.7', 'tailscale-user-login': 'me@example.com' }; // privacy-ok
 
 test('loopback without proxy headers is laptop (all loopback forms)', () => {
   for (const a of ['127.0.0.1', '::1', '::ffff:127.0.0.1']) assert.equal(classify(req(a), config), 'laptop');
@@ -27,7 +27,7 @@ test('wrong or empty login is null', () => {
 });
 
 test('loopback with x-forwarded-for but no login is null (cannot pose as laptop)', () => {
-  assert.equal(classify(req('127.0.0.1', { 'x-forwarded-for': '100.64.0.7' }), config), null);
+  assert.equal(classify(req('127.0.0.1', { 'x-forwarded-for': '100.64.0.7' }), config), null); // privacy-ok
   assert.equal(classify(req('127.0.0.1', { 'x-forwarded-host': 'x' }), config), null);
 });
 
@@ -44,7 +44,7 @@ test('array or mixed-case login header never classifies as laptop', () => {
 
 test('non-loopback source is null even with perfect headers', () => {
   assert.equal(classify(req('192.168.1.5'), config), null);
-  assert.equal(classify(req('100.64.0.7', tn), config), null);
+  assert.equal(classify(req('100.64.0.7', tn), config), null); // privacy-ok
   assert.equal(classify(req(undefined), config), null);
   assert.equal(classify({ headers: {} }, config), null);
 });
