@@ -141,4 +141,3 @@ test('ideasModel groups by milestone', () => {
   assert.deepEqual(r.groups.map((g) => [g.milestone, g.items.map((i) => i.id)]), [['Alpha', ['e']], ['Beta', ['h']]]);
   assert.deepEqual(ideasModel(null), { groups: [], count: 0 });
 });
-
