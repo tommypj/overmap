@@ -1,5 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { startScheduler } from '../serve.mjs';
 
 const noTimer = () => ({ unref() {} });
@@ -60,4 +63,18 @@ test('two calls during one run produce exactly one extra run, with the stronger 
     assert.deepEqual(seen, [true, false]); // light, then the queued full one (no --no-size)
     assert.equal(s.isRunning(), false);
   } finally { console.error = origErr; s.stop(); }
+});
+
+test('stop closes the database a recorded scan opened, so the home can be removed', async () => {
+  const home = mkdtempSync(join(tmpdir(), 'overmap-sched-'));
+  mkdirSync(join(home, 'data'));
+  writeFileSync(join(home, 'data', 'projects.json'), JSON.stringify({ generatedAt: '2026-11-14T10:00:00Z', scanSeconds: 1, projects: [] }));
+  const s = startScheduler({ home }, { run: async () => {}, setIntervalFn: noTimer, setTimeoutFn: noTimer });
+  await s.scan(false);
+  assert.equal(existsSync(join(home, 'data', 'overmap.db')), true);
+  assert.equal(s.dbOpen(), true);
+  s.stop();
+  assert.equal(s.dbOpen(), false);
+  rmSync(home, { recursive: true, force: true, maxRetries: 3 });
+  assert.equal(existsSync(home), false);
 });

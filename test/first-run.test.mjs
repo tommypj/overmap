@@ -82,3 +82,11 @@ test('loadConfig: malformed JSON is a CliError naming the file, without the pars
     assert.throws(() => loadConfig(home), (e) => e instanceof CliError && /overmap\.config\.json is not valid JSON/.test(e.message) && !/Unexpected|position/.test(e.message));
   } finally { rmSync(home, { recursive: true, force: true }); }
 });
+
+test('serve: a malformed config is one line naming the file, not a stack trace', () => {
+  const home = instance('{ not json');
+  try {
+    const line = oneLine(run('serve.mjs', home));
+    assert.ok(fwd(line).includes(`${fwd(join(home, 'overmap.config.json'))} is not valid JSON`), line);
+  } finally { rmSync(home, { recursive: true, force: true, maxRetries: 3 }); }
+});

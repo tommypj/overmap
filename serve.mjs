@@ -18,6 +18,7 @@ import { CONNECTORS } from './connectors/index.mjs';
 import { runConnector, EVERY_MS } from './lib/connector.mjs';
 import { fetchJson } from './lib/http.mjs';
 import { loadRegistry } from './registry.mjs';
+import { runCli } from './lib/cli-error.mjs';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 
@@ -89,7 +90,12 @@ export function startScheduler(config, { run = promisify(execFile), setIntervalF
     timers.push(setTimeoutFn(() => scan(false), 30_000));
   }
   for (const t of timers) t?.unref?.();
-  return { scan, isRunning: () => running, stop: () => timers.forEach((t) => { clearInterval(t); clearTimeout(t); }) };
+  // stop also closes the database record() opened, so a --sample shutdown can remove its folder (Windows locks open files).
+  const stop = () => {
+    timers.forEach((t) => { clearInterval(t); clearTimeout(t); });
+    if (db) { try { db.close(); } catch { /* closed */ } db = null; }
+  };
+  return { scan, isRunning: () => running, dbOpen: () => db !== null, stop };
 }
 
 const removeDir = (dir) => { try { rmSync(dir, { recursive: true, force: true, maxRetries: 3 }); } catch { /* best effort */ } };
@@ -226,8 +232,10 @@ if (process.argv[1] && resolve(process.argv[1]).toLowerCase() === resolve(fileUR
       process.exit(1);
     });
   } else {
-    const home = resolveHome();
-    ensureHome(home);
-    startServer({ home, port, noSchedule });
+    runCli(() => {
+      const home = resolveHome();
+      ensureHome(home);
+      startServer({ home, port, noSchedule });
+    });
   }
 }
