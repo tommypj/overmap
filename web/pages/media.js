@@ -85,7 +85,7 @@ export async function renderMedia(el, { p, ctx }) {
   };
   holder.append(h('p', { class: 'age' }, `indexed ${ago(r.data.at)}`), filt, grid, more);
   if (!files.length) holder.append(emptyNote('No images, video or audio found in this project.'));
-  if (r.data.truncated) holder.append(h('p', { class: 'note warn' }, 'Index truncated: the project has more media files than the cockpit lists.'));
+  if (r.data.truncated) holder.append(h('p', { class: 'note warn' }, 'Index truncated: the project has more media files than Overmap lists.'));
   holder.append(h('p', { class: 'muted small' }, 'Click a thumbnail to play or open it full size.'));
   paint();
 }

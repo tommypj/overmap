@@ -90,7 +90,7 @@ function renderSide(route) {
   if (t) side.append(t);
   const pk = collapsible('parked', 'Parked', g.parked.map((p) => navItem(p, cur)));
   if (pk) side.append(pk);
-  side.append(h('div', { class: 'grp' }, 'Cockpit'),
+  side.append(h('div', { class: 'grp' }, 'Overmap'),
     h('a', { class: 'navitem' + (route[0] === 'new' ? ' on' : ''), href: '#/new' }, 'New project'),
     h('a', { class: 'navitem' + (route[0] === 'audit' ? ' on' : ''), href: '#/audit' }, 'Actions log'),
     h('a', { class: 'navitem' + (route[0] === 'settings' ? ' on' : ''), href: '#/settings' }, 'Settings'));

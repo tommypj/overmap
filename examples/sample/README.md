@@ -8,7 +8,7 @@ Layout:
 
 - `notes/<project>.md`: the vault project notes (frontmatter the registry reads, plus a `## Blockers` section).
   The `@PROJECTS@` placeholder in `path` is replaced with the temporary projects folder when the sample is built.
-- `<project>/PLAN.md`: the plan the cockpit reads (percentages shown on the map).
+- `<project>/PLAN.md`: the plan Overmap reads (percentages shown on the map).
 - `<project>/test-results.json`: one run each. `shop-api` has two failing tests on purpose.
 - `<project>/graphify-out/graph.json`: a small synthetic code graph. `storefront` has none on purpose ("No graph yet").
 

@@ -11,7 +11,7 @@ export async function renderSettings(el, ctx) {
     who.error ? row('Access class', unk(who)) : row('Access class', who.data.class),
     who.error ? null : row('Signed in as', who.data.login ?? 'not applicable on the laptop')));
   if (set.error) {
-    el.append(h('section', { class: 'blk' }, h('h3', null, 'Cockpit'), h('p', { class: 'muted' }, unk(set))));
+    el.append(h('section', { class: 'blk' }, h('h3', null, 'Overmap'), h('p', { class: 'muted' }, unk(set))));
   } else {
     const s = set.data;
     const last = s.lastScan ? (s.lastScan.at ?? s.lastScan) : null;

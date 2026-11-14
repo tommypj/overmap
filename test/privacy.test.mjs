@@ -123,6 +123,18 @@ test('positive control: machine-local base artifacts are not scanned', () => {
   }
 });
 
+test('LICENSE is exempt: a denylist term inside a temp LICENSE is not reported, the same term in another file is', () => {
+  const dl = tempTree({ 'list.txt': 'zorbix\n' });
+  const tree = tempTree({ LICENSE: 'Copyright (c) 2026 Zorbix Holder\n', 'notes.md': 'the Zorbix tool\n' });
+  try {
+    const findings = scanTree(tree, { denylist: readDenylist(path.join(dl, 'list.txt')) });
+    assert.deepEqual(findings.map((f) => f.file), ['notes.md']);
+  } finally {
+    cleanup(dl);
+    cleanup(tree);
+  }
+});
+
 test('the public tree is clean', () => {
   const findings = scanTree(root, { denylist });
   assert.deepEqual(findings.map((f) => `${f.file}:${f.line} ${f.name} ${f.excerpt}`), []);

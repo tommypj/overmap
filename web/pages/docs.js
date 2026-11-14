@@ -54,7 +54,7 @@ export async function renderDocs(el, { p, rest, ctx }) {
   holder.append(h('p', { class: 'age' }, `indexed ${ago(r.data.at)}`), filt,
     h('div', { class: 'tablewrap' }, h('table', { class: 'grid-table' }, h('thead', null, h('tr', null, ...['Document', 'Folder', 'Modified', 'Size'].map((t) => h('th', null, t)))), tbody)), more);
   if (!files.length) holder.append(emptyNote('No documents found in this project.'));
-  if (r.data.truncated) holder.append(h('p', { class: 'note warn' }, 'Index truncated: the project has more documents than the cockpit lists.'));
+  if (r.data.truncated) holder.append(h('p', { class: 'note warn' }, 'Index truncated: the project has more documents than Overmap lists.'));
   holder.append(h('p', { class: 'muted small' }, 'Markdown and PDF open as a preview here. Word, PowerPoint and Excel files can be downloaded or their path copied.'));
   paint();
 }

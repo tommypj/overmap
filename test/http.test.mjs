@@ -42,7 +42,7 @@ test('returns status, parsed json and text; sets the User-Agent and GET', async 
   assert.deepEqual(r.json, { ok: true });
   assert.equal(r.text, '{"ok":true}');
   assert.equal(seen.method, 'GET');
-  assert.equal(seen.headers['user-agent'], 'project-cockpit/stage2');
+  assert.equal(seen.headers['user-agent'], 'overmap/1');
   assert.equal(seen.headers.authorization, 'Bearer x');
 });
 

@@ -14,6 +14,8 @@ export const PATTERNS = [
 ];
 
 const EXEMPT_EMAIL_DOMAINS = new Set(['example.com', 'example.org']);
+// Files the scanner never reads: LICENSE carries the copyright holder's legal name by design.
+const SKIP_FILES = new Set(['LICENSE']);
 const BINARY_EXT = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.db', '.sqlite']);
 const MARKER = 'privacy-ok';
 
@@ -52,7 +54,7 @@ function lineFindings(line, denylist) {
 
 function walk(dir, ignore, acc) {
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (ignore.includes(ent.name)) continue;
+    if (ignore.includes(ent.name) || (ent.isFile() && SKIP_FILES.has(ent.name))) continue;
     const full = path.join(dir, ent.name);
     if (ent.isDirectory()) walk(full, ignore, acc);
     else if (ent.isFile() && !BINARY_EXT.has(path.extname(ent.name).toLowerCase())) acc.push(full);

@@ -1,6 +1,6 @@
 import { deployNode } from './live.js';
 import { nowNext, testsModel, deployModel, bugsModel, ideasModel } from '../devmodel.js';
-import { branchText, h, api, enc, pill, unknownPill, section, bytes, ago, num, winPath, baseName, emptyNote, errorNote } from '../ui.js';
+import { branchText, h, api, enc, pill, unknownPill, section, bytes, ago, num, winPath, baseName, emptyNote, errorNote, factNote } from '../ui.js';
 
 const SKELETON = ['PROJECT.md', 'docs', 'assets', 'outputs', 'exports', 'ops'];
 

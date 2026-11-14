@@ -63,6 +63,6 @@ export async function renderFiles(el, { p, rest, winRoot }) {
   el.append(h('div', { class: 'tablewrap' }, h('table', { class: 'grid-table files' },
     h('thead', null, h('tr', null, ...['Name', 'Modified', 'Size', ''].map((t) => h('th', null, t)))), tbody)));
   if (!entries.length) el.append(emptyNote('Empty folder.'));
-  if (r.data.truncated) el.append(h('p', { class: 'note warn' }, 'Listing truncated: this folder has more entries than the cockpit shows.'));
+  if (r.data.truncated) el.append(h('p', { class: 'note warn' }, 'Listing truncated: this folder has more entries than Overmap shows.'));
   el.append(h('p', { class: 'muted small' }, 'Double-click a file (or press Preview) to look at it here. Office files: Download or Copy path.'), panel);
 }
