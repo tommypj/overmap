@@ -1,5 +1,7 @@
 # Overmap
 
+[![test](https://github.com/tommypj/overmap/actions/workflows/test.yml/badge.svg)](https://github.com/tommypj/overmap/actions/workflows/test.yml)
+
 Overmap is a map of every project you build with Claude Code: which folder it lives in, what it deploys to, what shares a service with what, what is half-done, and what inside a project talks to what. Projects are clustered by group, shared services are hubs, and zooming into a project shows its Graphify communities. Facts come from git, `PLAN.md`, `test-results.json` and a few connectors; the registry is your Obsidian notes.
 
 ![The map, zoomed out, with one group expanded](docs/images/map.jpg)
