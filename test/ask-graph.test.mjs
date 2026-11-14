@@ -119,7 +119,7 @@ test('ask-graph: runs the command with argv and cwd, caps and masks output, kill
       const r = await post({ id: 'demo', question: 'what is here?', csrf: await csrf() });
       assert.equal(r.status, 200);
       assert.equal(r.json.truncated, true);
-      assert.equal(r.json.exitCode, 0);
+      assert.equal(r.json.exitCode, null);
       assert.equal(typeof r.json.ms, 'number');
       assert.ok(Buffer.byteLength(r.json.answer) <= 64 * 1024);
       assert.ok(!r.json.answer.includes('t0k3n-fixture-8731'));
@@ -135,6 +135,28 @@ test('ask-graph: runs the command with argv and cwd, caps and masks output, kill
       const row = lastAudit(s);
       assert.equal(row.status, 'ok');
       assert.equal(row.project, 'demo');
+    });
+  } finally { cleanup(s); }
+});
+
+test('ask-graph: a child killed at the cap reports exitCode null, not the platform kill code', async () => {
+  // A child that keeps running until killed, then closes with code 1 (what Windows reports for a kill).
+  const spawn = (exe, args, opts) => {
+    const child = new EventEmitter();
+    child.stdout = new EventEmitter();
+    child.stderr = new EventEmitter();
+    child.kill = () => { child.killed = true; setImmediate(() => child.emit('close', 1)); };
+    setImmediate(() => child.stdout.emit('data', Buffer.from('y'.repeat(70 * 1024))));
+    return child;
+  };
+  const s = setup({ spawn });
+  try {
+    await withServer(s, async ({ post, csrf }) => {
+      const r = await post({ id: 'demo', question: 'big?', csrf: await csrf() });
+      assert.equal(r.status, 200);
+      assert.equal(r.json.truncated, true);
+      assert.equal(r.json.exitCode, null);
+      assert.equal(lastAudit(s).status, 'ok');
     });
   } finally { cleanup(s); }
 });

@@ -18,7 +18,8 @@ const SHIM_MSG = 'graphify not found (.cmd/.bat shims are not supported; install
 class TimedOut extends Error {}
 class ClientClosed extends Error {}
 
-// Runs `<exe> query <question>` in cwd. Resolves { text, truncated, exitCode, killedAtCap }. Rejects on spawn error,
+// Runs `<exe> query <question>` in cwd. Resolves { text, truncated, exitCode, killedAtCap }; exitCode is null when
+// we killed the child at the cap (whatever code the platform reports for a kill). Rejects on spawn error,
 // timeout or abort(). The child is killed when the output cap is reached, on timeout, and on abort.
 function runGraph({ spawn, exe, question, cwd, timeoutMs }) {
   let abortNow = () => {};
@@ -48,7 +49,7 @@ function runGraph({ spawn, exe, question, cwd, timeoutMs }) {
     child.stdout.on('data', onData);
     child.stderr.on('data', onData);
     child.on('error', (err) => finish(reject, err));
-    child.on('close', (code) => finish(resolve, { text: Buffer.concat(chunks).toString('utf8'), truncated, exitCode: code ?? null, killedAtCap }));
+    child.on('close', (code) => finish(resolve, { text: Buffer.concat(chunks).toString('utf8'), truncated, exitCode: killedAtCap ? null : code ?? null, killedAtCap }));
   });
   return { promise, abort: () => abortNow() };
 }

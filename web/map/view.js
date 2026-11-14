@@ -5,7 +5,7 @@
 import { h, clear, api, enc } from '../ui.js';
 import { mapModel } from './model.js';
 import { forceLayout } from './layout.js';
-import { projectPanel, servicePanel, summaryPanel, communityPanel, askPanel } from './panel.js';
+import { projectPanel, servicePanel, summaryPanel, communityPanel, askPanel, graphMissing } from './panel.js';
 
 const W = 960;
 const H = 560;
@@ -421,7 +421,7 @@ export async function renderProjectGraph(el, ctx, projectId, { api: fetchApi = a
   el.append(h('nav', { class: 'mapcrumb', 'aria-label': 'Breadcrumb' }, h('a', { href: '#/' }, 'Overmap'), ' \u203a ', p ? p.name : projectId));
   if (!p) { el.append(h('p', { class: 'note risk' }, 'unknown (no such project)')); return; }
   const sum = p.graph?.value;
-  if (!sum) { el.append(h('p', { class: 'muted' }, `No graph yet. Run: /graphify ${p.home ?? '<home>'}`)); return; }
+  if (!sum) { el.append(graphMissing(p)); return; }
 
   const comms = sum.communities || [];
   const top = topCommunities(comms, sum.communityEdges, showAll ? Infinity : TOP_COMMUNITIES);

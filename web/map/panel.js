@@ -19,6 +19,12 @@ function deployText(d) {
 }
 
 // p: a project from projects.json. opts: { fetchApi, onClose, onCollapse }.
+// No graph summary: say why (a read error, or no graph file yet) and what to run.
+export function graphMissing(p) {
+  if (p.graph?.error) return h('p', { class: 'note risk' }, `Graph not read: ${p.graph.error}`);
+  return h('p', { class: 'muted' }, `No graph yet. Run: /graphify ${p.home ?? '<home>'}`);
+}
+
 export function projectPanel(p, { fetchApi, onClose, onCollapse = null }) {
   const repo = p.repos?.[0];
   const v = repo?.git?.value;
@@ -32,7 +38,7 @@ export function projectPanel(p, { fetchApi, onClose, onCollapse = null }) {
   });
   const graph = p.graph?.value
     ? h('a', { href: '#/map/' + enc(p.id) }, 'Open the graph map')
-    : h('p', { class: 'muted' }, `No graph yet. Run: /graphify ${p.home ?? '<home>'}`);
+    : graphMissing(p);
   return h('div', { class: 'mapcard' }, panelHead(p.name, onClose),
     line('Status', pill(p.status || 'unknown', 'status')),
     line('Group', p.group || 'none'),

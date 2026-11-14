@@ -20,9 +20,9 @@ For each project, Overmap looks for `graphify-out/graph.json` inside the project
 
 Overmap computes the god nodes itself (the most connected nodes, by degree) because Graphify removes its own analysis file at the end of each run.
 
-Files larger than `graphMaxBytes` in `overmap.config.json` (default 67108864, that is 64 MiB) are not loaded whole. The scan keeps only the summary: community sizes, god nodes and links between communities. The full node list is loaded when you zoom into a community.
+The scan keeps only a summary of each graph: community sizes, god nodes and links between communities. The full node list is loaded when you zoom into a community. A file larger than `graphMaxBytes` in `overmap.config.json` (default 67108864, that is 64 MiB) is skipped: the project shows the error, and you raise `graphMaxBytes` to read it.
 
-When there is no graph file, the project shows "No graph yet" and the command to create one, `/graphify <project home>`.
+When there is no graph file, the project shows "No graph yet" and the command to create one, `/graphify <project home>`. When the file is there but cannot be read (over the cap, not valid JSON, or not a graph), the project panel and the zoomed-in view show why, and the project gets a warning: `graph not read: <reason>`.
 
 ## Producing a graph
 

@@ -18,6 +18,12 @@ const texts = (p, lv) => attentionFlags(p, NOW).filter((f) => !lv || f.level ===
 
 test('clean project has no flags', () => assert.deepEqual(attentionFlags(base(), NOW), []));
 
+test('an unreadable graph is a warning naming the error; no graph file is not', () => {
+  assert.deepEqual(texts(base({ graph: { at: 'x', value: null, error: '/p/graphify-out/graph.json: graph.json is not valid JSON' } }), 'warn'),
+    ['graph not read: /p/graphify-out/graph.json: graph.json is not valid JSON']);
+  assert.deepEqual(attentionFlags(base({ graph: { at: 'x', value: null } }), NOW), []);
+});
+
 test('no remote is a risk, unknown remotes is not', () => {
   assert.deepEqual(texts(base({ repos: [repo({ remotes: [] })] }), 'risk'), ['/p/a: no remote']);
   const unknown = attentionFlags(base({ repos: [repo({ remotes: null })] }), NOW);

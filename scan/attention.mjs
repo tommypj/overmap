@@ -35,6 +35,8 @@ export function attentionFlags(p, now = Date.now(), ctx = { registeredRoots: [],
     }
   }
 
+  if (p.graph?.error) warn(`graph not read: ${p.graph.error}`);
+
   for (const b of p.blockers ?? []) {
     if (b.done || !b.since) continue;
     const age = (now - Date.parse(b.since)) / DAY;

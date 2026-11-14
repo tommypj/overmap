@@ -5,6 +5,7 @@
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from './lib/config.mjs';
+import { CliError } from './lib/cli-error.mjs';
 import { resolveHome, ensureHome } from './lib/home.mjs';
 import { norm } from './lib/paths.mjs';
 import { loadRegistry, rootsOf } from './registry.mjs';
@@ -19,9 +20,16 @@ const log = (...a) => { if (!QUIET) console.log(...a); };
 
 const home = resolveHome();
 ensureHome(home);
-const config = loadConfig(home);
+let config, registry;
+try {
+  config = loadConfig(home);
+  registry = loadRegistry(join(home, 'registry.json'));
+} catch (e) {
+  if (!(e instanceof CliError)) throw e;
+  console.error(e.message);
+  process.exit(1);
+}
 const dataDir = join(home, 'data');
-const registry = loadRegistry(join(home, 'registry.json'));
 const cache = loadSizeCache(join(dataDir, 'size-cache.json'));
 const started = Date.now();
 

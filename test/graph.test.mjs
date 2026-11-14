@@ -78,6 +78,9 @@ test('graphFact: null when absent, error when unreadable or over cap, value when
   const bad = graphFact(home, { maxBytes: 1e6, now });
   assert.equal(bad.value, null);
   assert.match(bad.error, /graph\.json/);
+  assert.match(bad.error, /graph\.json is not valid JSON$/);
+  assert.ok(!/position|token|Unexpected/i.test(bad.error), bad.error);
+  assert.match(big.error, /raise graphMaxBytes/);
   rmSync(home, { recursive: true, force: true });
 });
 

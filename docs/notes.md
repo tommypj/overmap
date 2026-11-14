@@ -43,7 +43,7 @@ links: [https://my-app.example/docs]
 
 Put comments in the note's body, not after a value: the frontmatter reader does not strip `# ...` text, so a trailing comment becomes part of the value.
 
-`type` and `dashboard` must match exactly. `path` is required; a note without it is skipped. `status` is shown as written, so keep to the four values above to keep the map consistent.
+`type` and `dashboard` must match exactly. `path` is required; a note without it is skipped, and `make-registry.mjs` prints `skipped <note>: no path`. `status` is shown as written, so keep to the four values above to keep the map consistent.
 
 `uses` names shared services. Names are lower-cased and spaces become hyphens. A few aliases are folded together: `neon eu`, `neon db` and `neon database` become `neon`, and `vercel.com` becomes `vercel`. Any other name is a hub of its own.
 
@@ -63,7 +63,7 @@ Unchecked lines show on the project; checked lines are kept as history and do no
 
 ## Registry files
 
-`make-registry.mjs` builds `<home>/registry.json` from the notes. Entries that already exist in `registry.json` are never overwritten, so settings you add there (see [connectors](connectors.md)) survive a rebuild.
+`make-registry.mjs` builds `<home>/registry.json` from the notes. Run it again after you edit a note: for an entry that comes from a note, the fields the note owns (`name`, `group` as `family`, `path` as `home`, `repos`, `uses`, `connects`, and the note's own path) are refreshed from the note on every run. Fields only the registry holds (`kind`, `connectors`, `protected`, `worktreesManaged`, `oldPaths`) are kept, so settings you add there (see [connectors](connectors.md)) survive a rebuild. Entries from `registry.extra.json` never overwrite an existing id or home.
 
 For a folder that has no note, add it to `<home>/registry.extra.json`:
 

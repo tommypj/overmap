@@ -1,10 +1,17 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { norm } from './lib/paths.mjs';
+import { CliError } from './lib/cli-error.mjs';
 
 const KINDS = new Set(['project', 'shared', 'tool', 'data', 'media']);
 
 export function loadRegistry(file) {
-  const raw = JSON.parse(readFileSync(file, 'utf8'));
+  if (!existsSync(file)) throw new CliError(`no registry at ${file}. Run first: node make-registry.mjs`);
+  let raw;
+  try {
+    raw = JSON.parse(readFileSync(file, 'utf8'));
+  } catch {
+    throw new CliError(`${file} is not valid JSON. Fix it or delete it, then run: node make-registry.mjs`);
+  }
   const map = new Map();
   const homes = new Map();
   for (const [id, e] of Object.entries(raw.projects ?? {})) {

@@ -75,6 +75,34 @@ test('buildRegistry: note with path ~/code/app resolves to an absolute home; ext
   rmSync(d, { recursive: true, force: true });
 });
 
+test('buildRegistry refreshes note-owned fields on every run and keeps registry-only fields', () => {
+  const d = tmp();
+  const vault = join(d, 'vault');
+  mkdirSync(vault);
+  const nl = String.fromCharCode(10);
+  const write = (group, uses) => writeFileSync(join(vault, 'App.md'),
+    ['---', 'type: project', 'dashboard: true', 'name: App', `group: ${group}`, `path: ${join(d, 'app').replaceAll(String.fromCharCode(92), '/')}`, `uses: [${uses}]`, '---', ''].join(nl));
+  const registryFile = join(d, 'registry.json');
+  write('Web', 'neon');
+  assert.deepEqual(buildRegistry({ vaultProjectsDir: vault, registryFile }).added, ['App']);
+  const first = JSON.parse(readFileSync(registryFile, 'utf8'));
+  Object.assign(first.projects.App, { kind: 'tool', protected: true, connectors: { vercel: { project: 'x' } }, worktreesManaged: ['/w'], oldPaths: ['/old'] });
+  writeFileSync(registryFile, JSON.stringify(first));
+  write('Mobile', 'vercel, sentry');
+  const r = buildRegistry({ vaultProjectsDir: vault, registryFile });
+  assert.deepEqual(r.added, []);
+  assert.deepEqual(r.refreshed, ['App']);
+  const app = JSON.parse(readFileSync(registryFile, 'utf8')).projects.App;
+  assert.equal(app.family, 'Mobile');
+  assert.deepEqual(app.uses, ['vercel', 'sentry']);
+  assert.equal(app.kind, 'tool');
+  assert.equal(app.protected, true);
+  assert.deepEqual(app.connectors, { vercel: { project: 'x' } });
+  assert.deepEqual(app.worktreesManaged, ['/w']);
+  assert.deepEqual(app.oldPaths, ['/old']);
+  rmSync(d, { recursive: true, force: true });
+});
+
 test('loadRegistry carries connects as strings; [] when absent', () => {
   const d = tmp();
   const reg = loadRegistry(writeReg(d, {
