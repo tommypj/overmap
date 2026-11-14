@@ -32,17 +32,25 @@ test('deterministic and inside the box', () => {
   }
 });
 
-test('connected nodes end closer than unconnected ones on average', () => {
-  const pos = forceLayout(nodes, edges, { width: 800, height: 600, seed: 3 });
-  const dist = (p, q) => Math.hypot(pos.get(p).x - pos.get(q).x, pos.get(p).y - pos.get(q).y);
-  const connected = edges.map((e) => dist(e.a, e.b));
-  const avg = (xs) => xs.reduce((s, x) => s + x, 0) / xs.length;
+test('connected nodes end closer than unconnected ones, across seeds', () => {
   const linked = new Set(edges.flatMap((e) => [`${e.a}|${e.b}`, `${e.b}|${e.a}`]));
-  const free = [];
-  for (const p of nodes) for (const q of nodes) {
-    if (p.id < q.id && !linked.has(`${p.id}|${q.id}`)) free.push(dist(p.id, q.id));
+  const avg = (xs) => xs.reduce((s, x) => s + x, 0) / xs.length;
+  let wins = 0;
+  let gapSum = 0;
+  for (let seed = 1; seed <= 30; seed++) {
+    const pos = forceLayout(nodes, edges, { width: 800, height: 600, seed });
+    const dist = (p, q) => Math.hypot(pos.get(p).x - pos.get(q).x, pos.get(p).y - pos.get(q).y);
+    const connected = edges.map((e) => dist(e.a, e.b));
+    const free = [];
+    for (const p of nodes) for (const q of nodes) {
+      if (p.id < q.id && !linked.has(`${p.id}|${q.id}`)) free.push(dist(p.id, q.id));
+    }
+    const gap = avg(free) - avg(connected);
+    gapSum += gap;
+    if (gap > 0) wins++;
   }
-  assert.ok(avg(connected) < avg(free), `connected ${avg(connected)} vs free ${avg(free)}`);
+  assert.ok(wins >= 27, `connected closer in only ${wins}/30 seeds`);
+  assert.ok(gapSum / 30 > 0, `mean gap ${gapSum / 30} not positive`);
 });
 
 test('pinned nodes do not move', () => {
