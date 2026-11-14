@@ -5,7 +5,7 @@
 import { h, clear, api, enc } from '../ui.js';
 import { mapModel } from './model.js';
 import { forceLayout } from './layout.js';
-import { projectPanel, servicePanel, summaryPanel, communityPanel } from './panel.js';
+import { projectPanel, servicePanel, summaryPanel, communityPanel, askPanel } from './panel.js';
 
 const W = 960;
 const H = 560;
@@ -406,7 +406,7 @@ export async function renderProjectGraph(el, ctx, projectId, { api: fetchApi = a
   }
 
   const detail = h('div', { class: 'map-panel-body' });
-  const ask = h('div', { id: 'ask-graph', class: 'ask-graph' });
+  const ask = h('div', { id: 'ask-graph', class: 'ask-graph' }, askPanel(projectId));
   const side = h('aside', { class: 'map-panel' }, detail, ask);
   let pick = null;
   let nodeEls = [];

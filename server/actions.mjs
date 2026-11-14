@@ -2,8 +2,44 @@
 // Nothing from a request body reaches a command line.
 import { sendJson } from './router.mjs';
 import { listAudit, recordAction } from '../lib/audit.mjs';
-import { maskText } from '../lib/mask.mjs';
+import { maskText, maskSecrets } from '../lib/mask.mjs';
 import { validateNewProject, createProject } from '../lib/new-project.mjs';
+import { which as realWhich } from '../lib/which.mjs';
+import { spawn as realSpawn } from 'node:child_process';
+
+const ASK_MAX = 500; // characters in a question
+const ASK_CAP = 64 * 1024; // bytes of graphify output kept, stdout and stderr together
+const ASK_TIMEOUT_MS = 60_000;
+const CONTROL = /[\u0000-\u001f\u007f]/;
+
+class TimedOut extends Error {}
+
+// Runs `<exe> query <question>` in cwd and resolves with the output up to ASK_CAP. Rejects on spawn error or timeout.
+function runGraph({ spawn, exe, question, cwd, timeoutMs }) {
+  return new Promise((resolve, reject) => {
+    let child;
+    try { child = spawn(exe, ['query', question], { cwd, shell: false, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true }); } catch (err) { reject(err); return; }
+    const chunks = [];
+    let size = 0;
+    let truncated = false;
+    let settled = false;
+    let timer = null;
+    const settle = (fn, v) => { if (settled) return; settled = true; clearTimeout(timer); fn(v); };
+    timer = setTimeout(() => {
+      try { child.kill(); } catch { /* already gone */ }
+      settle(reject, new TimedOut('timed out'));
+    }, timeoutMs);
+    const onData = (chunk) => {
+      const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
+      const room = ASK_CAP - size;
+      if (buf.length > room) { truncated = true; if (room > 0) chunks.push(buf.subarray(0, room)); size = ASK_CAP; } else { chunks.push(buf); size += buf.length; }
+    };
+    child.stdout.on('data', onData);
+    child.stderr.on('data', onData);
+    child.on('error', (err) => settle(reject, err));
+    child.on('close', () => settle(resolve, { text: Buffer.concat(chunks).toString('utf8'), truncated }));
+  });
+}
 
 // A refusal: ends the request with this status and is audited as `refused`.
 class Refuse extends Error {
@@ -13,7 +49,9 @@ class Refuse extends Error {
 export function createActionRoutes({
   now = Date.now, getDb, getRegistry, tokens, who, rescan = null, isScanning = () => false,
   registryFile, projectsDir = null, vaultDir,
+  askGraph = {},
 }) {
+  const { which: findExe = realWhich, spawn = realSpawn, command = 'graphify', readProjects = () => ({ projects: [] }), timeoutMs = ASK_TIMEOUT_MS } = askGraph;
   function audit(w, action, project, args, status, result, started) {
     try {
       recordAction(getDb(), { at: new Date(now()).toISOString(), who: `${w.class}:${w.login ?? ''}`, action, project, args, status, result, durationMs: now() - started });
@@ -82,11 +120,42 @@ export function createActionRoutes({
     sendJson(req, res, 201, out);
   }, { noProject: true });
 
+  // Ask a project's knowledge graph: `graphify query <question>` in the project home. Nothing spawns before every check passes.
+  const askGraphRoute = (req, res, body) => guarded(req, res, body, 'ask-graph', async ({ done }) => {
+    const q = body?.question;
+    if (typeof q !== 'string' || q.length < 1 || q.length > ASK_MAX || CONTROL.test(q)) throw new Refuse(400, 'bad question');
+    let projects = [];
+    try { projects = readProjects()?.projects ?? []; } catch { projects = []; }
+    const p = projects.find((x) => x.id === body?.id);
+    if (!p) throw new Refuse(404, 'unknown project');
+    if (!p.home || !p.graph?.value) throw new Refuse(404, 'no graph');
+    const exe = findExe(command);
+    if (!exe) throw new Refuse(409, { error: 'graphify not found' });
+    const started = now();
+    let out;
+    try { out = await runGraph({ spawn, exe, question: q, cwd: p.home, timeoutMs }); } catch (err) {
+      if (err instanceof TimedOut) {
+        done('failed', { error: 'timed out' });
+        sendJson(req, res, 504, { error: 'timed out' });
+        return;
+      }
+      const msg = maskText(String(err?.message ?? err));
+      done('failed', { error: msg });
+      sendJson(req, res, 500, { error: msg });
+      return;
+    }
+    const ms = now() - started;
+    const answer = maskSecrets(out.text);
+    done('ok', { ms, truncated: out.truncated });
+    sendJson(req, res, 200, { answer, truncated: out.truncated, ms });
+  });
+
   async function handler({ req, res, url, path, body }) {
     if (req.method === 'POST') {
       switch (path) {
         case '/api/actions/rescan': return rescanRoute(req, res, body);
         case '/api/actions/new-project': return newProject(req, res, body);
+        case '/api/actions/ask-graph': return askGraphRoute(req, res, body);
         default: return false;
       }
     }

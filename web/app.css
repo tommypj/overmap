@@ -381,6 +381,9 @@ pre.out { margin: 0; height: 40vh; overflow: auto; background: #0d1117; color: #
 .mapcrumb { color: var(--muted); margin: 0 0 8px; }
 .map-panel-body { display: grid; gap: 6px; }
 .ask-graph { border-top: 1px dashed var(--line); margin-top: 10px; min-height: 4px; }
+.ask-form { display: flex; gap: 6px; margin-top: 8px; }
+.ask-input { flex: 1; min-width: 0; }
+.ask-answer { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 240px; overflow: auto; margin: 6px 0 0; font-size: 12px; }
 @media (max-width: 719px) {
   .map-body { display: block; }
   .map-svg { aspect-ratio: 4 / 3; }

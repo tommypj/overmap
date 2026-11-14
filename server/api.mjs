@@ -96,7 +96,7 @@ export function createRoutes({ config, now = Date.now, connectors = CONNECTORS, 
     const cls = classify(req, config);
     return { class: cls, login: cls === 'tailnet' ? String(req.headers['tailscale-user-login'] ?? '') : null };
   };
-  const actionRoutes = createActionRoutes({ now, getDb, getRegistry, tokens, who, rescan, isScanning, registryFile, projectsDir: config.projectsDir, vaultDir: config.vaultProjectsDir });
+  const actionRoutes = createActionRoutes({ now, getDb, getRegistry, tokens, who, rescan, isScanning, registryFile, projectsDir: config.projectsDir, vaultDir: config.vaultProjectsDir, askGraph: { command: config.graphifyCommand, readProjects } });
 
   async function routes(ctx) {
     const { req, res, url, path, config: cfg } = ctx;

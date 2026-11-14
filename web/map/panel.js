@@ -1,6 +1,7 @@
 // Side-panel content for the map: project and service details (zoomed out), summary and community lists
 // (zoomed in). Builds DOM with h() only; no innerHTML.
 import { h, enc, ago, branchText, num, pill } from '../ui.js';
+import { postAction } from '../actions.js';
 
 const safeHref = (u) => (/^https:\/\//i.test(u ?? '') ? u : null);
 
@@ -58,6 +59,24 @@ export function summaryPanel(sum) {
     h('p', { class: 'muted small' }, 'Click a community to list its nodes.'),
     h('div', { class: 'csub' }, 'Most connected'),
     h('ol', { class: 'items' }, ...(sum.gods || []).slice(0, 10).map((g) => h('li', null, g.label, h('span', { class: 'age' }, ` \u00b7 ${g.degree}`)))));
+}
+
+// Zoomed in: ask the project's graph a question (graphify query). The answer is shown as preformatted text.
+export function askPanel(projectId, { post = postAction } = {}) {
+  const input = h('input', { type: 'text', maxlength: 500, required: true, placeholder: 'Ask the graph', 'aria-label': 'Question for the graph', class: 'ask-input' });
+  const button = h('button', { class: 'btn small', type: 'submit' }, 'Ask');
+  const out = h('pre', { class: 'ask-answer mono', 'aria-live': 'polite' });
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    const question = input.value.trim();
+    if (!question) return;
+    button.disabled = true;
+    out.textContent = 'Asking\u2026';
+    const r = await post('api/actions/ask-graph', { id: projectId, question });
+    button.disabled = false;
+    out.textContent = r.error ? r.error : `${r.data.answer}${r.data.truncated ? '\n\n[answer cut at 64 KiB]' : ''}`;
+  };
+  return h('div', { class: 'ask-panel' }, h('form', { class: 'ask-form', on: { submit: onSubmit } }, input, button), out);
 }
 
 // state: {} while loading, { error } or { nodes, truncated }. Shows the top 50 nodes by degree.
