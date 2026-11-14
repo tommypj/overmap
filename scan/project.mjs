@@ -9,12 +9,13 @@ import { readTestResults } from './tests.mjs';
 import { pickReader } from '../plan/reader.mjs';
 import { attentionFlags } from './attention.mjs';
 import { dirSize, cachedSize, memoryNotes, readCard } from './assemble.mjs';
+import { graphFact } from './graph.mjs';
 
 export const fail = (e) => ({ at: new Date().toISOString(), error: e?.message ?? String(e) });
 const str = (x) => String(x ?? '');
 const arr = (v) => (Array.isArray(v) ? v : v == null ? [] : [v]);
 
-// ctx = { cache, skipSize, attentionCtx }
+// ctx = { cache, skipSize, attentionCtx, graphOpts, graph? } (graph defaults to graphFact; graphOpts = { maxBytes })
 export async function buildProject(entry, ctx) {
   const home = entry.home;
   const exists = existsSync(home);
@@ -31,6 +32,8 @@ export async function buildProject(entry, ctx) {
   const roots = rootsOf(entry, discovered);
 
   const tests = readTestResults(roots);
+  let graph;
+  try { graph = await (ctx.graph ?? graphFact)(home, ctx.graphOpts); } catch (e) { graph = { at: new Date().toISOString(), value: null, error: e?.message ?? String(e) }; }
 
   let plan;
   try { plan = { at: new Date().toISOString(), value: (await pickReader(home)?.read(home)) ?? null }; } catch (e) { plan = fail(e); }
@@ -59,7 +62,7 @@ export async function buildProject(entry, ctx) {
     roots,
     protected: entry.protected,
     worktreesManaged: entry.worktreesManaged,
-    repos, tests, plan,
+    repos, tests, plan, graph,
   };
   project.attention = attentionFlags(project, Date.now(), ctx.attentionCtx);
   return project;
@@ -75,7 +78,7 @@ export async function buildProjectSafe(entry, ctx) {
       path: entry.home, deploy: [], links: [], stack: [], blockers: [], exists: existsSync(entry.home),
       size: null, memory: [], kind: entry.kind, home: entry.home, uses: [], roots: [entry.home], protected: entry.protected,
       worktreesManaged: entry.worktreesManaged ?? [],
-      repos: [], tests: null, plan: null,
+      repos: [], tests: null, plan: null, graph: null,
       attention: [{ level: 'risk', text: `scan failed: ${e?.message ?? e}` }],
     };
   }

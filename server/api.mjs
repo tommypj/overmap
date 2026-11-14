@@ -14,6 +14,7 @@ import { maskText } from '../lib/mask.mjs';
 import { createSecrets } from '../lib/secrets.mjs';
 import { createTokens } from '../lib/csrf.mjs';
 import { createActionRoutes } from './actions.mjs';
+import { readGraph, communityDetail } from '../lib/graph.mjs';
 
 const HERE = fileURLToPath(new URL('..', import.meta.url));
 const INDEX_TTL = 10 * 60_000;
@@ -62,6 +63,7 @@ export function createRoutes({ config, now = Date.now, connectors = CONNECTORS, 
   };
 
   const indexCache = new Map(); // `${id}\0${kind}` -> { at, value }
+  const graphCache = new Map(); // parsed graphs keyed by file and mtime; the two most recent
 
   const readProjects = () => {
     try { return JSON.parse(readFileSync(dataFile, 'utf8')); } catch { throw new NotFound('no scan yet'); }
@@ -113,6 +115,26 @@ export function createRoutes({ config, now = Date.now, connectors = CONNECTORS, 
         const buf = Buffer.from(JSON.stringify(readProjects()));
         res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'content-length': buf.length });
         res.end(req.method === 'HEAD' ? undefined : buf);
+        return true;
+      }
+      case '/api/graph': {
+        const p = project(url);
+        const community = url.searchParams.get('community');
+        if (!community) throw new BadRequest('community required');
+        if (!p.home) throw new NotFound('no graph');
+        const file = join(p.home, 'graphify-out', 'graph.json');
+        if (!existsSync(file)) throw new NotFound('no graph');
+        const key = `${file}\0${statSync(file).mtimeMs}`;
+        let graph = graphCache.get(key);
+        if (graph) { graphCache.delete(key); graphCache.set(key, graph); } else {
+          try { graph = readGraph(file, { maxBytes: config.graphMaxBytes ?? 67108864 }); } catch (e) {
+            sendJson(req, res, /larger than/.test(e.message) ? 413 : 422, { error: e.message });
+            return true;
+          }
+          graphCache.set(key, graph);
+          while (graphCache.size > 2) graphCache.delete(graphCache.keys().next().value);
+        }
+        sendJson(req, res, 200, communityDetail(graph, community));
         return true;
       }
       case '/api/ls': {

@@ -1,0 +1,163 @@
+{
+  "directed": true,
+  "multigraph": false,
+  "graph": {},
+  "built_at_commit": "0000000000000000000000000000000000000000",
+  "hyperedges": [],
+  "nodes": [
+    {
+      "id": "a1",
+      "label": "charge",
+      "community": 0,
+      "community_name": "billing",
+      "source_file": "billing/charge.py",
+      "file_type": "code"
+    },
+    {
+      "id": "a2",
+      "label": "refund",
+      "community": 0,
+      "community_name": "billing",
+      "source_file": "billing/refund.py",
+      "file_type": "code"
+    },
+    {
+      "id": "a3",
+      "label": "login",
+      "community": 1,
+      "community_name": "auth",
+      "source_file": "auth/login.py",
+      "file_type": "code"
+    },
+    {
+      "id": "a4",
+      "label": "session",
+      "community": 1,
+      "community_name": "auth",
+      "source_file": "auth/session.py",
+      "file_type": "code"
+    },
+    {
+      "id": "a5",
+      "label": "send_mail",
+      "community": 2,
+      "community_name": "mailer",
+      "source_file": "mailer/send.py",
+      "file_type": "code"
+    },
+    {
+      "id": "a6",
+      "label": "README",
+      "source_file": "docs/README.md",
+      "file_type": "document"
+    },
+    {
+      "id": "a7",
+      "label": "helpers",
+      "source_file": null,
+      "file_type": "code"
+    },
+    {
+      "id": "a8",
+      "label": "config",
+      "source_file": "config.py",
+      "file_type": "code"
+    },
+    {
+      "id": "a9",
+      "label": "queue",
+      "community": 2,
+      "community_name": "mailer",
+      "source_file": "mailer/queue.py",
+      "file_type": "code"
+    },
+    {
+      "id": "a10",
+      "label": "report",
+      "community": 3,
+      "community_name": "reports",
+      "source_file": "reports/report.py",
+      "file_type": "code"
+    },
+    {
+      "id": "a11",
+      "label": "scratch",
+      "community": "",
+      "source_file": "scratch.py",
+      "file_type": "code"
+    },
+    {
+      "id": "a12",
+      "label": "legacy",
+      "community": null,
+      "source_file": "legacy.py",
+      "file_type": "code"
+    }
+  ],
+  "links": [
+    {
+      "source": "a1",
+      "target": "a2",
+      "relation": "calls",
+      "weight": 2
+    },
+    {
+      "source": "a2",
+      "target": "a1",
+      "relation": "imports"
+    },
+    {
+      "source": "a3",
+      "target": "a4",
+      "relation": "calls",
+      "weight": 1
+    },
+    {
+      "source": "a4",
+      "target": "a5",
+      "relation": "calls",
+      "weight": 1
+    },
+    {
+      "source": "a5",
+      "target": "a9",
+      "relation": "imports",
+      "weight": 3
+    },
+    {
+      "source": "a1",
+      "target": "a3",
+      "relation": null,
+      "weight": 1
+    },
+    {
+      "source": "a10",
+      "target": "a1",
+      "relation": "references",
+      "weight": 1
+    },
+    {
+      "source": "a7",
+      "target": "a8",
+      "relation": "contains",
+      "weight": 1
+    },
+    {
+      "source": "a6",
+      "target": "a10",
+      "relation": "references"
+    },
+    {
+      "source": "a11",
+      "target": "a12",
+      "relation": "calls",
+      "weight": 1
+    },
+    {
+      "source": "a9",
+      "target": "a4",
+      "relation": "calls",
+      "weight": 1
+    }
+  ]
+}

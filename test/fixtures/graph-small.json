@@ -1,0 +1,811 @@
+{
+  "directed": true,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "id": "n00",
+      "label": "billing_0",
+      "community": 0,
+      "community_name": "billing",
+      "source_file": "billing/billing_0.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n01",
+      "label": "billing_1",
+      "community": 0,
+      "community_name": "billing",
+      "source_file": "billing/billing_1.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n02",
+      "label": "billing_2",
+      "community": 0,
+      "community_name": "billing",
+      "source_file": "billing/billing_2.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n03",
+      "label": "billing_3",
+      "community": 0,
+      "community_name": "billing",
+      "source_file": "billing/billing_3.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n04",
+      "label": "billing_4",
+      "community": 0,
+      "community_name": "billing",
+      "source_file": "billing/billing_4.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n05",
+      "label": "billing_5",
+      "community": 0,
+      "community_name": "billing",
+      "source_file": "billing/billing_5.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n06",
+      "label": "billing_6",
+      "community": 0,
+      "community_name": "billing",
+      "source_file": "billing/billing_6.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n07",
+      "label": "billing_7",
+      "community": 0,
+      "community_name": "billing",
+      "source_file": "billing/billing_7.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n08",
+      "label": "billing_8",
+      "community": 0,
+      "community_name": "billing",
+      "source_file": "billing/billing_8.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n09",
+      "label": "billing_9",
+      "community": 0,
+      "community_name": "billing",
+      "source_file": "billing/billing_9.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n10",
+      "label": "billing_10",
+      "community": 0,
+      "community_name": "billing",
+      "source_file": "billing/billing_10.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n11",
+      "label": "billing_11",
+      "community": 0,
+      "community_name": "billing",
+      "source_file": "billing/billing_11.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n12",
+      "label": "billing_12",
+      "community": 0,
+      "community_name": "billing",
+      "source_file": "billing/billing_12.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n13",
+      "label": "billing_13",
+      "community": 0,
+      "community_name": "billing",
+      "source_file": "billing/billing_13.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n14",
+      "label": "billing_14",
+      "community": 0,
+      "community_name": "billing",
+      "source_file": "billing/billing_14.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n15",
+      "label": "billing_15",
+      "community": 0,
+      "community_name": "billing",
+      "source_file": "billing/billing_15.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n16",
+      "label": "auth_0",
+      "community": 1,
+      "community_name": "auth",
+      "source_file": "auth/auth_0.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n17",
+      "label": "auth_1",
+      "community": 1,
+      "community_name": "auth",
+      "source_file": "auth/auth_1.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n18",
+      "label": "auth_2",
+      "community": 1,
+      "community_name": "auth",
+      "source_file": "auth/auth_2.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n19",
+      "label": "auth_3",
+      "community": 1,
+      "community_name": "auth",
+      "source_file": "auth/auth_3.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n20",
+      "label": "auth_4",
+      "community": 1,
+      "community_name": "auth",
+      "source_file": "auth/auth_4.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n21",
+      "label": "auth_5",
+      "community": 1,
+      "community_name": "auth",
+      "source_file": "auth/auth_5.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n22",
+      "label": "auth_6",
+      "community": 1,
+      "community_name": "auth",
+      "source_file": "auth/auth_6.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n23",
+      "label": "auth_7",
+      "community": 1,
+      "community_name": "auth",
+      "source_file": "auth/auth_7.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n24",
+      "label": "auth_8",
+      "community": 1,
+      "community_name": "auth",
+      "source_file": "auth/auth_8.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n25",
+      "label": "auth_9",
+      "community": 1,
+      "community_name": "auth",
+      "source_file": "auth/auth_9.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n26",
+      "label": "auth_10",
+      "community": 1,
+      "community_name": "auth",
+      "source_file": "auth/auth_10.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n27",
+      "label": "auth_11",
+      "community": 1,
+      "community_name": "auth",
+      "source_file": "auth/auth_11.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n28",
+      "label": "mailer_0",
+      "community": 2,
+      "community_name": "mailer",
+      "source_file": "mailer/mailer_0.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n29",
+      "label": "mailer_1",
+      "community": 2,
+      "community_name": "mailer",
+      "source_file": "mailer/mailer_1.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n30",
+      "label": "mailer_2",
+      "community": 2,
+      "community_name": "mailer",
+      "source_file": "mailer/mailer_2.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n31",
+      "label": "mailer_3",
+      "community": 2,
+      "community_name": "mailer",
+      "source_file": "mailer/mailer_3.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n32",
+      "label": "mailer_4",
+      "community": 2,
+      "community_name": "mailer",
+      "source_file": "mailer/mailer_4.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n33",
+      "label": "mailer_5",
+      "community": 2,
+      "community_name": "mailer",
+      "source_file": "mailer/mailer_5.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n34",
+      "label": "mailer_6",
+      "community": 2,
+      "community_name": "mailer",
+      "source_file": "mailer/mailer_6.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n35",
+      "label": "mailer_7",
+      "community": 2,
+      "community_name": "mailer",
+      "source_file": "mailer/mailer_7.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n36",
+      "label": "reports_0",
+      "community": 3,
+      "community_name": "reports",
+      "source_file": "reports/reports_0.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n37",
+      "label": "reports_1",
+      "community": 3,
+      "community_name": "reports",
+      "source_file": "reports/reports_1.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n38",
+      "label": "reports_2",
+      "community": 3,
+      "community_name": "reports",
+      "source_file": "reports/reports_2.py",
+      "file_type": "code"
+    },
+    {
+      "id": "n39",
+      "label": "reports_3",
+      "community": 3,
+      "community_name": "reports",
+      "source_file": "reports/reports_3.py",
+      "file_type": "code"
+    }
+  ],
+  "edges": [
+    {
+      "source": "n36",
+      "target": "n00",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n00",
+      "target": "n16",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n32",
+      "target": "n16",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n08",
+      "target": "n24",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n16",
+      "target": "n00",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n00",
+      "target": "n08",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n16",
+      "target": "n08",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n24",
+      "target": "n00",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n24",
+      "target": "n08",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n00",
+      "target": "n32",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n08",
+      "target": "n09",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n08",
+      "target": "n09",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n08",
+      "target": "n16",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n08",
+      "target": "n32",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n00",
+      "target": "n24",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n32",
+      "target": "n00",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n32",
+      "target": "n33",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n08",
+      "target": "n32",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n32",
+      "target": "n16",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n00",
+      "target": "n01",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n24",
+      "target": "n00",
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n24",
+      "target": "n16",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n24",
+      "target": "n16",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n32",
+      "target": "n33",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n00",
+      "target": "n01",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n08",
+      "target": "n09",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n32",
+      "target": "n01",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n16",
+      "target": "n00",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n32",
+      "target": "n16",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n08",
+      "target": "n32",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n24",
+      "target": "n16",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n24",
+      "target": "n16",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n16",
+      "target": "n08",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n00",
+      "target": "n08",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n32",
+      "target": "n00",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n24",
+      "target": "n16",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n32",
+      "target": "n00",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n08",
+      "target": "n00",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n24",
+      "target": "n16",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n24",
+      "target": "n32",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n00",
+      "target": "n24",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n16",
+      "target": "n32",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n32",
+      "target": "n08",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n08",
+      "target": "n09",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n24",
+      "target": "n08",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n08",
+      "target": "n24",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n24",
+      "target": "n08",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n08",
+      "target": "n24",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n08",
+      "target": "n24",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n16",
+      "target": "n08",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n32",
+      "target": "n16",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n24",
+      "target": "n08",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n00",
+      "target": "n16",
+      "relation": "imports",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n16",
+      "target": "n32",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n24",
+      "target": "n16",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n08",
+      "target": "n32",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n00",
+      "target": "n24",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n00",
+      "target": "n08",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n08",
+      "target": "n16",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    },
+    {
+      "source": "n00",
+      "target": "n32",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "weight": 1
+    }
+  ],
+  "hyperedges": [],
+  "built_at_commit": "0000000000000000000000000000000000000000"
+}

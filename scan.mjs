@@ -29,7 +29,7 @@ const attentionCtx = {
   registeredRoots: allEntries.flatMap((e) => rootsOf(e)),
   toolHomes: allEntries.filter((e) => e.kind === 'tool').map((e) => e.home),
 };
-const ctx = { cache, skipSize: SKIP_SIZE, attentionCtx };
+const ctx = { cache, skipSize: SKIP_SIZE, attentionCtx, graphOpts: { maxBytes: config.graphMaxBytes } };
 
 const projects = [];
 for (const entry of registry.values()) {
