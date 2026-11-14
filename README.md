@@ -11,11 +11,11 @@ Overmap is a map of every project you build with Claude Code: which folder it li
 
 ![The map, zoomed out, with one group expanded](docs/images/map.jpg)
 
-Zero dependencies. Node 22+. Every file is readable.
+Zero dependencies. Node 22.13 or newer. Every file is readable.
 
 ## Quick start
 
-You need Node 22 or newer (Overmap uses the built-in `node:sqlite`). Then:
+You need Node 22.13 or newer (Overmap uses the built-in `node:sqlite`, which needs no flag from 22.13 on). Then:
 
 ```
 git clone https://github.com/tommypj/overmap.git
@@ -23,7 +23,7 @@ cd overmap
 node serve.mjs --sample
 ```
 
-Open http://127.0.0.1:3210. The sample is six invented projects in a temporary folder, removed when the server stops, so the map has something to show before you point Overmap at your own work.
+Open http://127.0.0.1:3210. The sample is six invented projects in a temporary folder, so the map has something to show before you point Overmap at your own work. Stop the server with Ctrl+C: it closes the server and its database and removes that folder.
 
 To use your own projects, build an instance folder and point Overmap at it:
 

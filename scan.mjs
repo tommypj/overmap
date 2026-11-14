@@ -1,3 +1,4 @@
+import './lib/node-floor.mjs'; // first: one line and exit 1 below the Node floor
 // Builds <home>/data/projects.json (and ARCHITECTURE.md + the MOC status table) from <home>/registry.json, the vault
 // project notes and live facts. Writes only: data/projects.json, data/size-cache.json, config.architectureFile
 // and the dashboard block inside config.mocFile. Exit code is 0 even when facts fail.

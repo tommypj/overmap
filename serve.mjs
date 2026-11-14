@@ -1,4 +1,5 @@
-// Cockpit server: read-only API + static web on 127.0.0.1; Tailscale serve proxies it to the tailnet.
+import './lib/node-floor.mjs'; // first: one line and exit 1 below the Node floor
+// Overmap server: read-only API + static web on 127.0.0.1; Tailscale serve proxies it to the tailnet.
 // Also owns the rescan schedule (15 min light, daily 04:00 full, never overlapping).
 import { createServer } from 'node:http';
 import { execFile } from 'node:child_process';
@@ -64,7 +65,7 @@ export function startScheduler(config, { run = promisify(execFile), setIntervalF
   async function scanOnce(full) {
     const args = ['scan.mjs', '--home', config.home, ...(full ? [] : ['--no-size']), '--quiet'];
     try {
-      await run('node', args, { cwd: HERE, windowsHide: true, timeout: 15 * 60 * 1000, killSignal: 'SIGKILL' });
+      await run(process.execPath, args, { cwd: HERE, windowsHide: true, timeout: 15 * 60 * 1000, killSignal: 'SIGKILL' });
       record();
     } catch (err) {
       console.error(`scan ${full ? 'full' : 'light'} failed:`, err.message);
@@ -91,19 +92,41 @@ export function startScheduler(config, { run = promisify(execFile), setIntervalF
   return { scan, isRunning: () => running, stop: () => timers.forEach((t) => { clearInterval(t); clearTimeout(t); }) };
 }
 
+const removeDir = (dir) => { try { rmSync(dir, { recursive: true, force: true, maxRetries: 3 }); } catch { /* best effort */ } };
+
+// The --sample stop: close the server (its 'close' closes the db and the scheduler), remove the sample folder, exit.
+// A server that does not close within `graceMs` is not waited for.
+export function sampleShutdown({ server, dir, exit = (code) => process.exit(code), graceMs = 2000 }) {
+  let done = false;
+  return () => {
+    if (done) return;
+    done = true;
+    const finish = () => { removeDir(dir); exit(0); };
+    const timer = setTimeout(finish, graceMs);
+    timer.unref?.();
+    server.close(() => { clearTimeout(timer); finish(); });
+    server.closeAllConnections?.();
+  };
+}
+
 // --sample: a fresh invented workspace in a temp folder, scanned once, then served with the scheduler on (unless noSchedule).
-// The scan scheduler stays on (Rescan works); the connector scheduler is off. The sample folder is removed on exit
-// (best effort) and at once if the build, scan or start fails. make-sample loads only on this path.
-export async function startSample({ port, noSchedule = false, env = process.env } = {}) {
+// The scan scheduler stays on (Rescan works); the connector scheduler is off. Ctrl+C (SIGINT) or SIGTERM closes the
+// server and the db and removes the sample folder; it is also removed on exit (best effort) and at once if the build,
+// scan or start fails. make-sample loads only on this path.
+export async function startSample({ port, noSchedule = false, env = process.env, signals = ['SIGINT', 'SIGTERM'], exit } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'overmap-sample-'));
-  const cleanup = () => { try { rmSync(dir, { recursive: true, force: true, maxRetries: 3 }); } catch { /* best effort */ } };
+  const cleanup = () => removeDir(dir);
   process.on('exit', cleanup);
   try {
     const { makeSample } = await import('./examples/make-sample.mjs');
     const { home } = await makeSample(dir);
     await promisify(execFile)(process.execPath, ['scan.mjs', '--home', home, '--no-size', '--quiet'], { cwd: HERE, windowsHide: true });
     console.log(`sample workspace in ${dir}`);
-    return startServer({ home, env, port, noSchedule, connectors: false });
+    const server = startServer({ home, env, port, noSchedule, connectors: false });
+    const stop = sampleShutdown({ server, dir, ...(exit ? { exit } : {}) });
+    for (const sig of signals) process.once(sig, stop);
+    server.on('close', () => { for (const sig of signals) process.off(sig, stop); });
+    return server;
   } catch (e) {
     cleanup();
     throw e;

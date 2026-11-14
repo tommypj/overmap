@@ -29,10 +29,11 @@ export async function makeSample(dir, { git = true, runSync = execFileSync } = {
 
   const copyProject = (id) => cpSync(join(SAMPLE, id), join(projectsDir, id), { recursive: true });
   const git_ = (cwd, args) => runSync('git', args, { cwd, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
-  const IDENTITY = ['-c', 'user.name=sample', '-c', 'user.email=sample@example.com'];
+  // Identity and hook settings for the sample's own commits: no signing, no user hooks.
+  const IDENTITY = ['-c', 'user.name=sample', '-c', 'user.email=sample@example.com', '-c', 'commit.gpgsign=false', '-c', 'core.hooksPath='];
   const commitAll = (cwd) => {
     git_(cwd, ['add', '-A']);
-    git_(cwd, [...IDENTITY, 'commit', '-q', '-m', 'init']);
+    git_(cwd, [...IDENTITY, 'commit', '-q', '--no-verify', '-m', 'init']);
   };
 
   // Static files first. With git, api-worker is left out: `git worktree add` must create its folder.

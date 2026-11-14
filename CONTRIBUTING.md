@@ -11,7 +11,7 @@ Thanks for looking. Overmap is a small tool with a few hard rules. Read these be
 
 ## Rules
 
-- **Zero dependencies.** Node 22 or newer, the standard library, and `node:sqlite`. No `package.json` dependencies, no build step. Every file must stay readable.
+- **Zero dependencies.** Node 22.13 or newer, the standard library, and `node:sqlite`. No `package.json` dependencies, no build step. Every file must stay readable.
 - **No privacy leaks.** Nothing from a real person's machine, projects, clients, hosts or accounts goes into the tree, the tests, the fixtures, the screenshots or the commit messages. Sample and test data are invented.
 - **The web side has no bundler.** Plain HTML, CSS and JavaScript. A web change is checked by running `node serve.mjs --sample` and opening every tab of the page, not only the one you touched, because nothing catches an undefined name in a page before the browser runs it.
 
