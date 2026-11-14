@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { mkdtempSync, writeFileSync, rmSync, unlinkSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, unlinkSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -10,7 +10,7 @@ import { createApp } from '../serve.mjs';
 import { maskText } from '../lib/mask.mjs';
 import { openDb } from '../lib/db.mjs';
 import { runConnector, connectorOverview } from '../lib/connector.mjs';
-import { getSecret, secretsHealth, _resetSecretsCache } from '../lib/secrets.mjs';
+import { createSecrets } from '../lib/secrets.mjs';
 import { baselineFor, readBaseline, saveBaseline, clearBaseline, leaveOverview, notePendingVisit, persistPendingVisit } from '../web/events.js';
 import { fmtCents, fmtCentsPlain } from '../web/pages/live.js';
 import ls from '../connectors/lemonsqueezy.mjs';
@@ -21,10 +21,11 @@ const config = { vaultProjectsDir: '/p', mocFile: '/m.md', allowedLogin: 'x@exam
 
 async function withApp(extra, reg, fn) {
   const dir = mkdtempSync(join(tmpdir(), 'cockpit-ff-'));
-  writeFileSync(join(dir, 'reg.json'), JSON.stringify(reg));
-  writeFileSync(join(dir, 'projects.json'), JSON.stringify({ generatedAt: '2026-10-31T10:00:00Z', projects: [] }));
-  const env = { DASH_PORT: String(NOMINAL), DASH_NO_SCHEDULE: '1', DASH_DB: join(dir, 'c.db'), DASH_REGISTRY: join(dir, 'reg.json'), DASH_DATA: join(dir, 'projects.json') };
-  const server = createApp(config, env, extra);
+  writeFileSync(join(dir, 'registry.json'), JSON.stringify(reg));
+  mkdirSync(join(dir, 'data'), { recursive: true });
+  writeFileSync(join(dir, 'data', 'projects.json'), JSON.stringify({ generatedAt: '2026-10-31T10:00:00Z', projects: [] }));
+  const paths = { dbFile: join(dir, 'data', 'overmap.db') };
+  const server = createApp({ ...config, home: dir }, process.env, extra);
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const port = server.address().port;
   const get = (path) => new Promise((resolve, reject) => {
@@ -46,7 +47,7 @@ test('registry.json edits show up without a restart', async () => {
   await withApp({}, reg(), async ({ get, dir }) => {
     const ids = async () => JSON.parse((await get('/api/connectors')).body)[0].projects.map((p) => p.project);
     assert.deepEqual(await ids(), ['A']);
-    writeFileSync(join(dir, 'reg.json'), JSON.stringify(reg({ B: { home: '/zz-b', connectors: { health: { url: null } } } })));
+    writeFileSync(join(dir, 'registry.json'), JSON.stringify(reg({ B: { home: '/zz-b', connectors: { health: { url: null } } } })));
     assert.deepEqual((await ids()).sort(), ['A', 'B']);
   });
 });
@@ -108,16 +109,16 @@ test('fmtCents: real currency, or EUR labelled as assumed; plain keeps no symbol
 });
 
 test('secrets file that disappears becomes missing, not cached values', () => {
-  _resetSecretsCache();
   const dir = mkdtempSync(join(tmpdir(), 'cockpit-ff-sec-'));
   const file = join(dir, 'secrets.json');
+  const s = createSecrets(dir);
   try {
     writeFileSync(file, JSON.stringify({ A: 'va' }));
     execFileSync('icacls', [file, '/inheritance:r', '/grant:r', `${process.env.USERDOMAIN}\\${process.env.USERNAME}:F`], { stdio: 'ignore' });
-    assert.equal(getSecret('A', file), 'va');
+    assert.equal(s.getSecret('A'), 'va');
     unlinkSync(file);
-    assert.equal(getSecret('A', file), undefined);
-    assert.equal(secretsHealth(file).file, 'missing');
+    assert.equal(s.getSecret('A'), undefined);
+    assert.equal(s.health().file, 'missing');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
@@ -146,4 +147,4 @@ test('connector overview carries note and discover flag for Settings', () => {
     assert.equal('discover' in connectorOverview(health, new Map(), {}, db, () => undefined), false);
   } finally { db.close(); rmSync(dir, { recursive: true, force: true }); }
 });
-
+

@@ -92,10 +92,10 @@ test('createProject failure reports created paths', () => {
 async function withApp(fn, { noVault = false } = {}) {
   const s = setup();
   const rescans = [];
-  const env = { DASH_DB: join(s.dir, 'c.db'), DASH_DATA: join(s.dir, 'p.json'), DASH_REGISTRY: s.registryFile, DASH_ACTIONS: join(s.dir, 'actions'), DASH_PROJECTS_DIR: s.projectsDir };
-  mkdirSync(env.DASH_ACTIONS);
-  const config = noVault ? { allowedLogin: LOGIN } : { allowedLogin: LOGIN, vaultProjectsDir: s.vaultDir };
-  const routes = createRoutes({ config, env, rescan: (f) => { rescans.push(f); }, isScanning: () => false });
+  const actionsDir = join(s.dir, 'actions');
+  mkdirSync(actionsDir);
+  const config = { home: s.dir, allowedLogin: LOGIN, projectsDir: s.projectsDir, ...(noVault ? {} : { vaultProjectsDir: s.vaultDir }) };
+  const routes = createRoutes({ config, actionsDir, rescan: (f) => { rescans.push(f); }, isScanning: () => false });
   const server = http.createServer();
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const port = server.address().port;
@@ -111,7 +111,7 @@ async function withApp(fn, { noVault = false } = {}) {
   });
   const get = (p, h) => call('GET', p, null, h);
   const post = (p, b, h) => call('POST', p, b, h);
-  try { await fn({ get, post, rescans, s, env }); } finally { routes.close(); server.closeAllConnections?.(); server.close(); rmSync(s.dir, { recursive: true, force: true }); }
+  try { await fn({ get, post, rescans, s }); } finally { routes.close(); server.closeAllConnections?.(); server.close(); rmSync(s.dir, { recursive: true, force: true }); }
 }
 
 test('route: validation, confirm, create, duplicate, tailnet', async () => {
@@ -171,7 +171,7 @@ test('createProject: unreadable registry fails with nothing written; no branches
 });
 
 test('route: injection refused with nothing written, audit rows, nonce bound to note, 503 unconfigured', async () => {
-  await withApp(async ({ get, post, s, env }) => {
+  await withApp(async ({ get, post, s }) => {
     const csrf = (await get('/api/csrf')).json.token;
     const bad = await post('/api/actions/new-project', { ...good, csrf, purpose: 'x\ndashboard: false' });
     assert.equal(bad.status, 400); assert.ok(bad.json.errors.purpose);
@@ -183,7 +183,7 @@ test('route: injection refused with nothing written, audit rows, nonce bound to 
     const c2 = await post('/api/actions/new-project', { ...good, csrf });
     const ok = await post('/api/actions/new-project', { ...good, csrf, confirm: c2.json.confirm.nonce });
     assert.equal(ok.status, 201);
-    const db = openDb(env.DASH_DB);
+    const db = openDb(join(s.dir, 'data', 'overmap.db'));
     const rows = listAudit(db, { limit: 20 }).filter((r) => r.action === 'new-project');
     db.close();
     assert.ok(rows.some((r) => r.status === 'ok'));

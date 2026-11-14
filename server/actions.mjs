@@ -56,7 +56,7 @@ function descendantsOf(procs, proc) {
 export function createActionRoutes({
   now = Date.now, getDb, getRegistry, getSnapshot, refreshSnapshot = getSnapshot, runner, tokens, actionsDir, who, env = process.env,
   spawnOpen = defaultSpawnOpen, codeExe, killTree = taskkillTree, rescan = null, isScanning = () => false,
-  registryFile, projectsDir = '/projects', vaultDir, readProjects = null,
+  registryFile, projectsDir = null, vaultDir, readProjects = null,
 }) {
   const cache = actionsCache(actionsDir);
   const keyOf = (id, action) => `${id}/${action.id}`;

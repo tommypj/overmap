@@ -1,8 +1,10 @@
 {
-  "vaultProjectsDir": "/vault/Projects",
-  "mocFile": "/vault/Projects MOC.md",
+  "vaultProjectsDir": "~/vault/Projects",
+  "mocFile": null,
   "allowedLogin": "",
+  "proxyHost": null,
   "port": 3210,
-  "architectureFile": "/projects/ARCHITECTURE.md",
-  "memoryRoot": "/u/someone/.claude/projects"
+  "architectureFile": null,
+  "memoryRoot": null,
+  "projectsDir": "~/code"
 }

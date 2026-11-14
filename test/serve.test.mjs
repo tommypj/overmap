@@ -12,23 +12,19 @@ const config = { vaultProjectsDir: '/p', mocFile: '/m.md', allowedLogin: LOGIN, 
 
 const base = mkdtempSync(join(tmpdir(), 'serve-'));
 const root = join(base, 'proj');
-const webDir = join(base, 'web');
 mkdirSync(root);
-mkdirSync(webDir);
 writeFileSync(join(root, 'ten.txt'), '0123456789ABCDEF');
 writeFileSync(join(root, 'pic.svg'), '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>');
 writeFileSync(join(root, '.env'), 'SECRET=1');
 writeFileSync(join(root, 'clip.mp4'), 'xx');
-writeFileSync(join(webDir, 'index.html'), '<!doctype html><title>cockpit</title>');
-writeFileSync(join(webDir, 'app.js'), 'console.log(1)');
-const dataFile = join(base, 'projects.json');
+mkdirSync(join(base, 'data'));
+const dataFile = join(base, 'data', 'projects.json');
 writeFileSync(dataFile, JSON.stringify({ generatedAt: '2026-10-31T10:00:00Z', scanSeconds: 3, projects: [{ id: 'P1', name: 'P1', roots: [root] }], unmapped: [] }));
 
 let server;
 let port;
 before(async () => {
-  const env = { DASH_PORT: String(NOMINAL), DASH_DATA: dataFile, DASH_WEB: webDir, DASH_NO_SCHEDULE: '1', DASH_REGISTRY: join(base, 'none.json'), DASH_DB: join(base, 'c.db') };
-  server = createApp(config, env);
+  server = createApp({ ...config, home: base });
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   port = server.address().port;
 });
@@ -174,7 +170,7 @@ test('ls and index return the documented shapes', async () => {
 test('settings has secrets health, config, lastScan', async () => {
   const s = json(await req('/api/settings'));
   assert.ok(['missing', 'unprotected', 'unreadable', 'ok'].includes(s.secrets.file));
-  assert.deepEqual(s.config, { vaultProjectsDir: '/p', architectureFile: '/a.md' });
+  assert.deepEqual(s.config, { home: base, vaultProjectsDir: '/p', architectureFile: '/a.md' });
   assert.equal(s.lastScan, null);
 });
 

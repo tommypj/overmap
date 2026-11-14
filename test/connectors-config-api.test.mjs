@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createApp } from '../serve.mjs';
@@ -11,12 +11,13 @@ const config = { vaultProjectsDir: '/p', mocFile: '/m.md', allowedLogin: 'x@exam
 
 test('GET /api/connectors/config returns the registry connector config, secrets-free', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'cockpit-cc-'));
-  writeFileSync(join(dir, 'projects.json'), '{"projects":[]}');
-  writeFileSync(join(dir, 'reg.json'), JSON.stringify({ projects: { Demo: { home: '/demo-x', connectors: {
+  mkdirSync(join(dir, 'data'), { recursive: true });
+  writeFileSync(join(dir, 'data', 'projects.json'), '{"projects":[]}');
+  writeFileSync(join(dir, 'registry.json'), JSON.stringify({ projects: { Demo: { home: '/demo-x', connectors: {
     gsc: { siteUrl: 'sc-domain:demo.test' }, 'custom': { baseUrl: 'https://x.test', apiToken: 'SECRET', nested: { password: 'p', ok: 1, deep: { secretKey: 'z', name: 'n' } }, leak: 'https://u:pw@example.com/x', leak2: 'https://h.test/p?token=abc12345', list: ['https://a:b@example.com', 'fine'] },
     ga4: { propertyId: '123' }, lemonsqueezy: { storeId: 42 }, extra: { companyId: 'c-1', companyPrefix: 'AST' }, bad: null } } } }));
-  const env = { DASH_PORT: String(NOMINAL), DASH_NO_SCHEDULE: '1', DASH_DB: join(dir, 'c.db'), DASH_REGISTRY: join(dir, 'reg.json'), DASH_DATA: join(dir, 'projects.json') };
-  const server = createApp(config, env);
+  const paths = { dbFile: join(dir, 'data', 'overmap.db') };
+  const server = createApp({ ...config, home: dir });
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const port = server.address().port;
   const get = (path) => new Promise((resolve, reject) => {

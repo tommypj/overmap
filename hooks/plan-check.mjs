@@ -5,10 +5,10 @@ import { execFileSync } from 'node:child_process';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadRegistry, rootsOf } from '../registry.mjs';
+import { resolveHome } from '../lib/home.mjs';
 import { isUnder, norm } from '../lib/paths.mjs';
 import { planFileMtime, planFilePath } from '../plan/reader.mjs';
 
-const HERE = dirname(fileURLToPath(import.meta.url));
 export const WORK_WINDOW_MS = 4 * 3600000;
 export const DEADLINE_MS = 6000;
 const GIT_TIMEOUT_MS = 2000;
@@ -145,7 +145,7 @@ async function readAll(stream) {
   return Buffer.concat(chunks).toString('utf8');
 }
 
-export async function main({ stdin = process.stdin, stdout = process.stdout, registryFile = resolve(HERE, '..', 'registry.json'), git = realGit, now = Date.now, planMtime = planFileMtime, planFile = planFilePath } = {}) {
+export async function main({ stdin = process.stdin, stdout = process.stdout, argv = process.argv, env = process.env, registryFile = `${resolveHome({ argv, env })}/registry.json`, git = realGit, now = Date.now, planMtime = planFileMtime, planFile = planFilePath } = {}) {
   let result = {};
   try {
     const text = await readAll(stdin);

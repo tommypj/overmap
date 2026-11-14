@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDb } from '../lib/db.mjs';
@@ -76,7 +76,7 @@ test('health: a null url is not_configured with the registry field named', async
 test('scheduler: first run at 60 s, 5 s apart, no overlap, targets run serially', async () => {
   const { dir, db, done } = tmpDb();
   try {
-    writeFileSync(join(dir, 'reg.json'), JSON.stringify({ version: 1, projects: {
+    writeFileSync(join(dir, 'registry.json'), JSON.stringify({ version: 1, projects: {
       A: { home: '/zz-a', connectors: { health: { url: 'https://a.example/h' } } },
       B: { home: '/zz-b', connectors: { health: { url: 'https://b.example/h' } } },
     } }));
@@ -84,7 +84,7 @@ test('scheduler: first run at 60 s, 5 s apart, no overlap, targets run serially'
     const intervals = [];
     const pending = [];
     const fetchImpl = (u) => new Promise((r) => { pending.push(() => r({ status: 200, json: {}, text: '{}' })); void u; });
-    const s = startConnectorScheduler({ DASH_REGISTRY: join(dir, 'reg.json'), DASH_DATA: join(dir, 'none.json') }, {
+    const s = startConnectorScheduler({ home: dir }, {
       connectors: [health, { ...health, id: 'second' }], db, fetchJsonImpl: fetchImpl,
       setTimeoutFn: (fn, ms) => { timeouts.push({ fn, ms }); return { unref() {} }; },
       setIntervalFn: (fn, ms) => { intervals.push({ fn, ms }); return { unref() {} }; },
@@ -114,13 +114,14 @@ const config = { vaultProjectsDir: '/p', mocFile: '/m.md', allowedLogin: 'x@exam
 
 async function withApp(extra, fn) {
   const dir = mkdtempSync(join(tmpdir(), 'cockpit-api-'));
-  writeFileSync(join(dir, 'reg.json'), JSON.stringify({ version: 1, projects: {
+  writeFileSync(join(dir, 'registry.json'), JSON.stringify({ version: 1, projects: {
     A: { home: '/zz-a', connectors: { health: { url: 'https://a.example/h' } } },
     C: { home: '/zz-c', connectors: { health: { url: null } } },
   } }));
-  writeFileSync(join(dir, 'projects.json'), JSON.stringify({ generatedAt: '2026-10-31T10:00:00Z', projects: [] }));
-  const env = { DASH_PORT: String(NOMINAL), DASH_NO_SCHEDULE: '1', DASH_DB: join(dir, 'c.db'), DASH_REGISTRY: join(dir, 'reg.json'), DASH_DATA: join(dir, 'projects.json') };
-  const server = createApp(config, env, extra);
+  mkdirSync(join(dir, 'data'), { recursive: true });
+  writeFileSync(join(dir, 'data', 'projects.json'), JSON.stringify({ generatedAt: '2026-10-31T10:00:00Z', projects: [] }));
+  const paths = { dbFile: join(dir, 'data', 'overmap.db') };
+  const server = createApp({ ...config, home: dir }, process.env, extra);
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const port = server.address().port;
   const get = (path) => new Promise((resolve, reject) => {
@@ -130,7 +131,7 @@ async function withApp(extra, fn) {
       res.on('end', () => resolve({ status: res.statusCode, body: Buffer.concat(chunks).toString() }));
     }).on('error', reject);
   });
-  try { await fn({ get, dir, env }); } finally {
+  try { await fn({ get, dir, paths }); } finally {
     server.closeAllConnections?.();
     await new Promise((r) => server.close(r));
     try { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); } catch { /* temp dir cleanup only */ }
@@ -149,8 +150,8 @@ test('/api/connectors works before any run: not_configured computed live, else n
 });
 
 test('facts, series, events serve what a run wrote, with no secret in sight', async () => {
-  await withApp({}, async ({ get, env }) => {
-    const db = openDb(env.DASH_DB);
+  await withApp({}, async ({ get, paths }) => {
+    const db = openDb(paths.dbFile);
     const conn = {
       id: 'stub', every: '5m', secrets: ['TOK'], required: [], targets: () => [{ project: 'A' }],
       fetch: async () => { throw new Error('echo Authorization: Bearer pcp_board_abc12345'); }, parse: () => ({}), // privacy-ok
@@ -181,8 +182,8 @@ test('facts, series, events serve what a run wrote, with no secret in sight', as
 
 test('/api/events is bounded to 500 rows, newest first', async () => {
   // Pin the clock: the default window is "last 24 h" and the rows below sit at NOW.
-  await withApp({ now: () => NOW + 3_600_000 }, async ({ get, env }) => {
-    const db = openDb(env.DASH_DB);
+  await withApp({ now: () => NOW + 3_600_000 }, async ({ get, paths }) => {
+    const db = openDb(paths.dbFile);
     const ins = db.prepare('INSERT INTO events(project, source, kind, at, title, url, json, external_id) VALUES (?,?,?,?,?,?,?,?)');
     db.exec('BEGIN');
     for (let i = 0; i < 600; i++) ins.run('A', 's', 'k', new Date(NOW + i * 1000).toISOString(), `t${i}`, null, null, `e${i}`);

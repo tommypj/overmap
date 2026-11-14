@@ -5,7 +5,6 @@ import { fileURLToPath } from 'node:url';
 import { sendJson, BadRequest } from './router.mjs';
 import { classify } from './auth.mjs';
 import { resolveSafe, listDir, indexFiles, sendFile, NotFound, Forbidden } from './fsapi.mjs';
-import { secretsHealth } from '../lib/secrets.mjs';
 import { maskSecrets } from '../scan/refs.mjs';
 import { systemSnapshot, matchProcesses, isProtected, currentUser, sameUser } from '../scan/system.mjs';
 import { loadRegistry } from '../registry.mjs';
@@ -14,7 +13,7 @@ import { CONNECTORS, byId } from '../connectors/index.mjs';
 import { connectorOverview, sanitiseError } from '../lib/connector.mjs';
 import { fetchJson } from '../lib/http.mjs';
 import { maskText } from '../lib/mask.mjs';
-import { getSecret as realGetSecret } from '../lib/secrets.mjs';
+import { createSecrets } from '../lib/secrets.mjs';
 import { createTokens } from '../lib/csrf.mjs';
 import { createActionRoutes } from './actions.mjs';
 import { createRunner } from '../lib/runner.mjs';
@@ -46,15 +45,15 @@ function firstTeamId(reg) {
   return null;
 }
 
-export function createRoutes({ config, env = process.env, now = Date.now, snapshot = systemSnapshot, connectors = CONNECTORS, getSecret = realGetSecret, fetchJsonImpl = fetchJson, tokens = createTokens({ now }), runner = createRunner({ now }), spawnOpen, codeExe, killTree, rescan, isScanning }) {
+export function createRoutes({ config, env = process.env, now = Date.now, snapshot = systemSnapshot, connectors = CONNECTORS, secrets = createSecrets(config.home), getSecret = secrets.getSecret, fetchJsonImpl = fetchJson, tokens = createTokens({ now }), runner = createRunner({ now }), spawnOpen, codeExe, killTree, rescan, isScanning, actionsDir = ACTIONS_DIR }) {
   const connById = (id) => connectors.find((c) => c.id === id) ?? byId(id);
-  const dataFile = resolve(HERE, env.DASH_DATA ?? 'projects.json');
-  const webDir = resolve(HERE, env.DASH_WEB ?? 'web');
-  const registryFile = resolve(HERE, env.DASH_REGISTRY ?? 'registry.json');
+  const dataFile = join(config.home, 'data', 'projects.json');
+  const webDir = resolve(HERE, 'web');
+  const registryFile = join(config.home, 'registry.json');
   const legacyFile = join(HERE, 'legacy', 'dashboard.html');
 
   let db = null;
-  const getDb = () => (db ??= openDb(env.DASH_DB ? resolve(HERE, env.DASH_DB) : undefined));
+  const getDb = () => (db ??= openDb(join(config.home, 'data', 'overmap.db')));
 
   // Re-read when registry.json changes (mtime/size), so Settings and Live reflect edits without a restart.
   let registry = null;
@@ -113,7 +112,7 @@ export function createRoutes({ config, env = process.env, now = Date.now, snapsh
     const cls = classify(req, config);
     return { class: cls, login: cls === 'tailnet' ? String(req.headers['tailscale-user-login'] ?? '') : null };
   };
-  const actionRoutes = createActionRoutes({ now, getDb, getRegistry, getSnapshot, refreshSnapshot, runner, tokens, who, env, spawnOpen, codeExe, killTree, rescan, isScanning, registryFile, projectsDir: env.DASH_PROJECTS_DIR ?? '/projects', vaultDir: config.vaultProjectsDir, readProjects, actionsDir: env.DASH_ACTIONS ? resolve(HERE, env.DASH_ACTIONS) : ACTIONS_DIR });
+  const actionRoutes = createActionRoutes({ now, getDb, getRegistry, getSnapshot, refreshSnapshot, runner, tokens, who, env, spawnOpen, codeExe, killTree, rescan, isScanning, registryFile, projectsDir: config.projectsDir, vaultDir: config.vaultProjectsDir, readProjects, actionsDir });
 
   async function routes(ctx) {
     const { req, res, url, path, config: cfg } = ctx;
@@ -194,8 +193,8 @@ export function createRoutes({ config, env = process.env, now = Date.now, snapsh
         try { lastScan = getDb().prepare('SELECT at, seconds, projects FROM scan_runs ORDER BY at DESC LIMIT 1').get() ?? null; } catch { /* db unavailable */ }
         if (lastScan) lastScan = { ...lastScan };
         sendJson(req, res, 200, {
-          secrets: secretsHealth(),
-          config: { vaultProjectsDir: cfg.vaultProjectsDir, architectureFile: cfg.architectureFile },
+          secrets: secrets.health(),
+          config: { home: cfg.home, vaultProjectsDir: cfg.vaultProjectsDir, architectureFile: cfg.architectureFile },
           lastScan,
         });
         return true;

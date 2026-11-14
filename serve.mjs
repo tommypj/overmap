@@ -4,31 +4,34 @@ import { createServer } from 'node:http';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { readFileSync, statSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadConfig } from './lib/config.mjs';
 import { openDb } from './lib/db.mjs';
+import { resolveHome, ensureHome } from './lib/home.mjs';
+import { createSecrets } from './lib/secrets.mjs';
 import { createHandler } from './server/router.mjs';
 import { createRoutes } from './server/api.mjs';
 import { CONNECTORS } from './connectors/index.mjs';
 import { runConnector, EVERY_MS } from './lib/connector.mjs';
 import { fetchJson } from './lib/http.mjs';
-import { getSecret } from './lib/secrets.mjs';
 import { loadRegistry } from './registry.mjs';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 
+// One secrets reader per instance: the routes and the connector scheduler share it.
 export function createApp(config, env = process.env, extra = {}) {
-  const port = Number(env.DASH_PORT) || config.port || 3210;
-  const routes = createRoutes({ config, env, ...extra });
-  const server = createServer(createHandler({ config, port, routes }));
+  const { secrets: given, ...rest } = extra;
+  const secrets = given ?? createSecrets(config.home);
+  const routes = createRoutes({ config, env, secrets, getSecret: secrets.getSecret, ...rest });
+  const server = createServer(createHandler({ config, port: config.port, routes }));
   server.on('close', routes.close);
   server.on('close', () => { routes.runner.stopAll(); }); // no orphaned children when the server goes down
   return server;
 }
 
-export function startScheduler(env = process.env, { run = promisify(execFile), setIntervalFn = setInterval, setTimeoutFn = setTimeout } = {}) {
-  const dataFile = resolve(HERE, env.DASH_DATA ?? 'projects.json');
+export function startScheduler(config, { run = promisify(execFile), setIntervalFn = setInterval, setTimeoutFn = setTimeout } = {}) {
+  const dataFile = join(config.home, 'data', 'projects.json');
   let running = false;
   let queued = false, queuedFull = false; // a scan asked for during a run: one more follows it
   let db = null;
@@ -36,7 +39,7 @@ export function startScheduler(env = process.env, { run = promisify(execFile), s
   function record() {
     try {
       const d = JSON.parse(readFileSync(dataFile, 'utf8'));
-      db ??= openDb(env.DASH_DB ? resolve(HERE, env.DASH_DB) : undefined);
+      db ??= openDb(join(config.home, 'data', 'overmap.db'));
       db.prepare('INSERT INTO scan_runs(at, seconds, projects) VALUES (?, ?, ?)').run(d.generatedAt, d.scanSeconds ?? null, d.projects?.length ?? 0);
     } catch (e) {
       console.error('scan_runs record failed:', e.message);
@@ -59,7 +62,7 @@ export function startScheduler(env = process.env, { run = promisify(execFile), s
   }
 
   async function scanOnce(full) {
-    const args = ['scan.mjs', ...(full ? [] : ['--no-size']), '--quiet'];
+    const args = ['scan.mjs', '--home', config.home, ...(full ? [] : ['--no-size']), '--quiet'];
     try {
       await run('node', args, { cwd: HERE, windowsHide: true, timeout: 15 * 60 * 1000, killSignal: 'SIGKILL' });
       record();
@@ -90,12 +93,12 @@ export function startScheduler(env = process.env, { run = promisify(execFile), s
 
 // Connector scheduler: one timer per connector, first run 60 s after start (5 s apart), targets serial,
 // a connector never overlaps itself. Failures are recorded by runConnector; nothing here can crash the server.
-export function startConnectorScheduler(env = process.env, {
+export function startConnectorScheduler(config, {
   connectors = CONNECTORS, setIntervalFn = setInterval, setTimeoutFn = setTimeout,
-  secret = getSecret, fetchJsonImpl = fetchJson, now = Date.now, db: injectedDb = null,
+  secret = createSecrets(config.home).getSecret, fetchJsonImpl = fetchJson, now = Date.now, db: injectedDb = null,
 } = {}) {
-  const dataFile = resolve(HERE, env.DASH_DATA ?? 'projects.json');
-  const registryFile = resolve(HERE, env.DASH_REGISTRY ?? 'registry.json');
+  const dataFile = join(config.home, 'data', 'projects.json');
+  const registryFile = join(config.home, 'registry.json');
   const running = new Set();
   const timers = [];
   let db = injectedDb;
@@ -105,7 +108,7 @@ export function startConnectorScheduler(env = process.env, {
     if (running.has(conn.id)) return;
     running.add(conn.id);
     try {
-      db ??= openDb(env.DASH_DB ? resolve(HERE, env.DASH_DB) : undefined);
+      db ??= openDb(join(config.home, 'data', 'overmap.db'));
       let registry;
       try { registry = loadRegistry(registryFile); } catch { registry = new Map(); }
       let projectsJson = {};
@@ -162,11 +165,15 @@ export function isOlderSelf(cmdLine, here = HERE) {
   return norm(cmdLine).includes(norm(resolve(here, 'serve.mjs')));
 }
 
-export function startServer(env = process.env, { onError, ownerOf = portOwner, cmdLineOf = commandLineOf, kill = (pid) => process.kill(pid) } = {}) {
-  const config = loadConfig();
-  const port = Number(env.DASH_PORT) || config.port || 3210;
-  const scheduler = env.DASH_NO_SCHEDULE !== '1' ? startScheduler(env) : null;
-  const server = createApp(config, env, scheduler ? { rescan: (full) => scheduler.scan(full), isScanning: () => scheduler.isRunning() } : {});
+// Options: home (instance folder), port (overrides config.port), noSchedule (or OVERMAP_NO_SCHEDULE=1).
+export function startServer({ home = resolveHome(), env = process.env, onError, port: portOverride, noSchedule: noScheduleOpt = false, ownerOf = portOwner, cmdLineOf = commandLineOf, kill = (pid) => process.kill(pid) } = {}) {
+  const loaded = loadConfig(home);
+  const config = portOverride ? { ...loaded, port: portOverride } : loaded;
+  const port = config.port;
+  const noSchedule = noScheduleOpt || env.OVERMAP_NO_SCHEDULE === '1';
+  const secrets = createSecrets(config.home);
+  const scheduler = !noSchedule ? startScheduler(config) : null;
+  const server = createApp(config, env, { secrets, ...(scheduler ? { rescan: (full) => scheduler.scan(full), isScanning: () => scheduler.isRunning() } : {}) });
   if (scheduler) server.on('close', scheduler.stop);
   let tookOver = false;
   server.on('error', async (err) => {
@@ -191,13 +198,16 @@ export function startServer(env = process.env, { onError, ownerOf = portOwner, c
     if (onError) onError(err, msg); else process.exit(2);
   });
   server.listen(port, '127.0.0.1', () => console.log(`dashboard on http://127.0.0.1:${port}`));
-  if (env.DASH_NO_SCHEDULE !== '1') {
-    const cs = startConnectorScheduler(env);
+  if (!noSchedule) {
+    const cs = startConnectorScheduler(config, { secret: secrets.getSecret });
     server.on('close', cs.stop);
   }
   return server;
 }
 
 if (process.argv[1] && resolve(process.argv[1]).toLowerCase() === resolve(fileURLToPath(import.meta.url)).toLowerCase()) {
-  startServer();
+  const home = resolveHome();
+  ensureHome(home);
+  const i = process.argv.indexOf('--port');
+  startServer({ home, port: i >= 0 ? Number(process.argv[i + 1]) || undefined : undefined, noSchedule: process.argv.includes('--no-schedule') });
 }

@@ -5,7 +5,9 @@ import http from 'node:http';
 import { execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
-import { getSecret, secretsPath } from './lib/secrets.mjs';
+import { createSecrets } from './lib/secrets.mjs';
+import { resolveHome } from './lib/home.mjs';
+import { join } from 'node:path';
 import { fetchJson } from './lib/http.mjs';
 import { SCOPES, TOKEN_URL, TOKEN_HOST } from './lib/google-oauth.mjs';
 
@@ -33,6 +35,8 @@ async function main(argv) {
     console.log(buildConsentUrl({ clientId: 'CLIENT_ID', port: 'PORT' }));
     return 0;
   }
+  const home = resolveHome();
+  const { getSecret } = createSecrets(home);
   const clientId = getSecret('GOOGLE_OAUTH_CLIENT_ID');
   const clientSecret = getSecret('GOOGLE_OAUTH_CLIENT_SECRET');
   if (!clientId || !clientSecret) {
@@ -73,7 +77,7 @@ async function main(argv) {
     const res = await fetchJson(TOKEN_URL, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body, allowHosts: [TOKEN_HOST] });
     const token = res.json?.refresh_token;
     if (typeof token !== 'string' || !token) throw new Error('no refresh_token in response (revoke the app at myaccount.google.com/permissions and retry)');
-    console.log(`Add this line inside the existing JSON object in ${secretsPath} (mind the comma):`);
+    console.log(`Add this line inside the existing JSON object in ${join(home, 'secrets.json')} (mind the comma):`);
     console.log(`"GOOGLE_OAUTH_REFRESH_TOKEN": ${JSON.stringify(token)}`);
     return 0;
   } catch (e) {

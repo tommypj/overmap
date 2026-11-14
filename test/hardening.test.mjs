@@ -71,12 +71,24 @@ function get(port, path, headers) {
   });
 }
 const closeServer = async (s) => { s.closeAllConnections?.(); await new Promise((r) => s.close(r)); };
+// An instance folder (under base) holding a scan result at data/projects.json.
+function homeWith(name, projects) {
+  const h = join(base, name);
+  mkdirSync(join(h, 'data'), { recursive: true });
+  writeFileSync(join(h, 'data', 'projects.json'), JSON.stringify({ generatedAt: 'x', projects }));
+  return h;
+}
+// An instance folder (under base) holding only overmap.config.json, for startServer.
+function configHome(name, port) {
+  const h = join(base, name);
+  mkdirSync(h, { recursive: true });
+  writeFileSync(join(h, 'overmap.config.json'), JSON.stringify({ vaultProjectsDir: '/p', allowedLogin: 'a@example.com', port }));
+  return h;
+}
 
 test('content check: 403 over HTTP for each pattern class (incl. Range), negatives served', async () => {
-  const dataFile = join(base, 'sec-projects.json');
-  writeFileSync(dataFile, JSON.stringify({ generatedAt: 'x', projects: [{ id: 'S', name: 'S', roots: [sec] }] }));
   const config = { vaultProjectsDir: '/p', mocFile: '/m.md', allowedLogin: 'a@example.com', port: 45872, architectureFile: '/a.md', memoryRoot: '/m' };
-  const server = createApp(config, { DASH_PORT: '45872', DASH_DATA: dataFile, DASH_NO_SCHEDULE: '1', DASH_REGISTRY: join(base, 'none.json'), DASH_DB: join(base, 's.db') });
+  const server = createApp({ ...config, home: homeWith('sec-home', [{ id: 'S', name: 'S', roots: [sec] }]) });
   await listen(server);
   const port = server.address().port;
   const H = { host: '127.0.0.1:45872' };
@@ -114,11 +126,9 @@ test('service paths, task arguments and pm2 scripts are secret-masked', () => {
 });
 
 test('/api/live masks secrets in command lines', async () => {
-  const df = join(base, 'live.json');
-  writeFileSync(df, JSON.stringify({ generatedAt: 'x', projects: [{ id: 'L', name: 'L', roots: ['/live/proj'] }] }));
   const snapshot = async () => ({ at: 1, value: { processes: [{ pid: 1, ppid: 0, name: 'node.exe', cmd: 'node /live/proj/a.js --token=pcp_board_abc12345', created: '2026-01-01T00:00:00Z' }], listeners: [] } }); // privacy-ok
   const config = { vaultProjectsDir: '/p', mocFile: '/m.md', allowedLogin: 'a@example.com', port: 45873, architectureFile: '/a.md', memoryRoot: '/m' };
-  const routes = createRoutes({ config, env: { DASH_DATA: df, DASH_REGISTRY: join(base, 'none.json'), DASH_DB: join(base, 'l.db') }, snapshot });
+  const routes = createRoutes({ config: { ...config, home: homeWith('live-home', [{ id: 'L', name: 'L', roots: ['/live/proj'] }]) }, snapshot });
   const srv = http.createServer(createHandler({ config, port: 45873, routes }));
   await listen(srv);
   try {
@@ -133,7 +143,7 @@ test('startServer reports a port in use through onError', async () => {
   await listen(blocker);
   const p = blocker.address().port;
   const got = await new Promise((resolve) => {
-    startServer({ DASH_PORT: String(p), DASH_NO_SCHEDULE: '1', DASH_DB: join(base, 'e.db'), DASH_REGISTRY: join(base, 'none.json') }, { onError: (e, msg) => resolve({ e, msg }) });
+    startServer({ home: configHome('e-home', p), noSchedule: true, onError: (e, msg) => resolve({ e, msg }) });
   });
   blocker.close();
   assert.equal(got.e.code, 'EADDRINUSE');
@@ -150,7 +160,7 @@ test('startServer takes the port over from an older copy of itself', async () =>
   const p = blocker.address().port;
   let killed = null;
   const srv = startServer(
-    { DASH_PORT: String(p), DASH_NO_SCHEDULE: '1', DASH_DB: join(base, 'e3.db'), DASH_REGISTRY: join(base, 'none.json') },
+    { home: configHome('e3-home', p), noSchedule: true },
     {
       ownerOf: async () => '4242',
       cmdLineOf: async () => `"C:\\Program Files\\nodejs\\node.exe" ${SERVE}`, // privacy-ok
@@ -170,7 +180,7 @@ test('a second server process on a busy port exits with code 2', async () => {
   const out = await new Promise((resolve) => {
     const c = spawn(process.execPath, ['serve.mjs'], {
       cwd: new URL('..', import.meta.url),
-      env: { ...process.env, DASH_PORT: String(p), DASH_NO_SCHEDULE: '1', DASH_DB: join(base, 'e2.db') },
+      env: { ...process.env, OVERMAP_HOME: configHome('e2-home', p), OVERMAP_NO_SCHEDULE: '1' },
     });
     let err = '';
     c.stderr.on('data', (d) => { err += d; });
@@ -211,10 +221,8 @@ test('byte-based content check: any extension, UTF-16, binary skipped; sqlite an
   writeFileSync(join(d, '.push-tokens.json'), '{}');
   writeFileSync(join(d, 'pic.png'), Buffer.concat([Buffer.from([0x89, 0x50, 0, 0, 0]), Buffer.from('refresh_token')]));
   assert.ok(!listDir(d).entries.some((e) => e.name === 'x.sqlite' || e.name === '.push-tokens.json'));
-  const df = join(base, 'bytes.json');
-  writeFileSync(df, JSON.stringify({ generatedAt: 'x', projects: [{ id: 'B', name: 'B', roots: [d] }] }));
   const config = { vaultProjectsDir: '/p', mocFile: '/m.md', allowedLogin: 'a@example.com', port: 45874, architectureFile: '/a.md', memoryRoot: '/m' };
-  const server = createApp(config, { DASH_PORT: '45874', DASH_DATA: df, DASH_NO_SCHEDULE: '1', DASH_REGISTRY: join(base, 'none.json'), DASH_DB: join(base, 'b.db') });
+  const server = createApp({ ...config, home: homeWith('bytes-home', [{ id: 'B', name: 'B', roots: [d] }]) });
   await listen(server);
   const port = server.address().port;
   const H = { host: '127.0.0.1:45874' };

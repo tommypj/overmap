@@ -8,7 +8,7 @@ test('a failing or hung scan runner resets the running flag', async () => {
   let calls = 0;
   const seen = [];
   const run = async (_cmd, _args, opts) => { calls++; seen.push(opts); throw new Error('boom'); };
-  const s = startScheduler({ DASH_DATA: 'does-not-exist.json' }, { run, setIntervalFn: noTimer, setTimeoutFn: noTimer });
+  const s = startScheduler({ home: 'no-such-home' }, { run, setIntervalFn: noTimer, setTimeoutFn: noTimer });
   const origErr = console.error;
   console.error = () => {};
   try {
@@ -25,7 +25,7 @@ test('overlapping scans are queued into one more run', async () => {
   let calls = 0;
   let release;
   const run = () => { calls++; return new Promise((r) => { release = r; }); };
-  const s = startScheduler({ DASH_DATA: 'does-not-exist.json' }, { run, setIntervalFn: noTimer, setTimeoutFn: noTimer });
+  const s = startScheduler({ home: 'no-such-home' }, { run, setIntervalFn: noTimer, setTimeoutFn: noTimer });
   const origErr = console.error;
   console.error = () => {};
   try {
@@ -45,7 +45,7 @@ test('two calls during one run produce exactly one extra run, with the stronger 
   const seen = [];
   const rel = [];
   const run = (_c, args) => { seen.push(args.includes('--no-size')); return new Promise((r) => rel.push(r)); };
-  const s = startScheduler({ DASH_DATA: 'does-not-exist.json' }, { run, setIntervalFn: noTimer, setTimeoutFn: noTimer });
+  const s = startScheduler({ home: 'no-such-home' }, { run, setIntervalFn: noTimer, setTimeoutFn: noTimer });
   const origErr = console.error;
   console.error = () => {};
   try {

@@ -1,11 +1,11 @@
-// Builds projects.json (and ARCHITECTURE.md + the MOC status table) from registry.json, the vault
-// project notes and live facts. Writes only: projects.json, .size-cache.json, config.architectureFile
+// Builds <home>/data/projects.json (and ARCHITECTURE.md + the MOC status table) from <home>/registry.json, the vault
+// project notes and live facts. Writes only: data/projects.json, data/size-cache.json, config.architectureFile
 // and the dashboard block inside config.mocFile. Exit code is 0 even when facts fail.
-// Flags: --no-size (skip the disk walk), --quiet (no per-project progress).
+// Flags: --home <dir> (instance folder, default OVERMAP_HOME or ~/.overmap), --no-size (skip the disk walk), --quiet.
 import { writeFileSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { loadConfig } from './lib/config.mjs';
+import { resolveHome, ensureHome } from './lib/home.mjs';
 import { norm } from './lib/paths.mjs';
 import { loadRegistry, rootsOf } from './registry.mjs';
 import { systemSnapshot } from './scan/system.mjs';
@@ -15,14 +15,16 @@ import { writeArchitecture } from './scan/architecture.mjs';
 import { buildProjectSafe, fail } from './scan/project.mjs';
 import { loadSizeCache, saveSizeCache, mocTable, updateMoc, writeIfChanged } from './scan/assemble.mjs';
 
-const HERE = dirname(fileURLToPath(import.meta.url));
 const SKIP_SIZE = process.argv.includes('--no-size');
 const QUIET = process.argv.includes('--quiet');
 const log = (...a) => { if (!QUIET) console.log(...a); };
 
-const config = loadConfig();
-const registry = loadRegistry(join(HERE, 'registry.json'));
-const cache = loadSizeCache(join(HERE, '.size-cache.json'));
+const home = resolveHome();
+ensureHome(home);
+const config = loadConfig(home);
+const dataDir = join(home, 'data');
+const registry = loadRegistry(join(home, 'registry.json'));
+const cache = loadSizeCache(join(dataDir, 'size-cache.json'));
 const started = Date.now();
 
 const snapshot = await systemSnapshot().catch(fail);
@@ -39,7 +41,7 @@ for (const entry of registry.values()) {
   projects.push(await buildProjectSafe(entry, ctx));
   log(`${entry.id}: ${((Date.now() - t) / 1000).toFixed(1)}s`);
 }
-saveSizeCache(join(HERE, '.size-cache.json'), cache);
+saveSizeCache(join(dataDir, 'size-cache.json'), cache);
 
 const extraRoots = projects.flatMap((p) => p.repos.flatMap((r) => r.git.value?.worktrees?.map((w) => w.path) ?? []));
 const folderUnmapped = unmappedFolders(registry, undefined, extraRoots);
@@ -51,7 +53,7 @@ const agentUnmapped = unmappedAgentProjects(registry, [...(codex.value ?? []), .
 const unmapped = mergeUnmapped(folderUnmapped, agentUnmapped);
 const scanSeconds = Math.round((Date.now() - started) / 1000);
 const out = { generatedAt: new Date().toISOString(), scanSeconds, projects, unmapped, unmappedSources };
-writeFileSync(join(HERE, 'projects.json'), JSON.stringify(out, null, 2));
+writeFileSync(join(dataDir, 'projects.json'), JSON.stringify(out, null, 2));
 
 let archWritten = false, mocWritten = false;
 try { writeIfChanged(norm(config.architectureFile), writeArchitecture(projects, registry, config, unmapped)); archWritten = true; } catch (e) { console.error(`ARCHITECTURE.md not written: ${e.message}`); }

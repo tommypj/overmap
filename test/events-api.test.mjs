@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDb } from '../lib/db.mjs';
@@ -15,13 +15,14 @@ const iso = (agoMs) => new Date(Date.now() - agoMs).toISOString();
 
 async function withApp(seed, fn) {
   const dir = mkdtempSync(join(tmpdir(), 'cockpit-ev-'));
-  const dbFile = join(dir, 'c.db');
+  const dbFile = join(dir, 'data', 'overmap.db');
   const db = openDb(dbFile);
   seed(db);
   db.close();
-  writeFileSync(join(dir, 'projects.json'), '{"projects":[]}');
-  const env = { DASH_PORT: String(NOMINAL), DASH_NO_SCHEDULE: '1', DASH_DB: dbFile, DASH_REGISTRY: join(dir, 'reg.json'), DASH_DATA: join(dir, 'projects.json') };
-  const server = createApp(config, env);
+  mkdirSync(join(dir, 'data'), { recursive: true });
+  writeFileSync(join(dir, 'data', 'projects.json'), '{"projects":[]}');
+  const paths = { dbFile: join(dir, 'data', 'overmap.db') };
+  const server = createApp({ ...config, home: dir });
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const port = server.address().port;
   const get = (path) => new Promise((resolve, reject) => {

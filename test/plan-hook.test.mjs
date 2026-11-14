@@ -201,4 +201,12 @@ test('main: missing registry file writes {}', async () => {
   assert.equal(s.out(), '{}');
 });
 
+test('main: reads the registry from the --home folder given in argv', async () => {
+  const s = sink();
+  await main({ stdin: Readable.from([JSON.stringify({ cwd: '/zz/a/x' })]), stdout: s.w, argv: ['node', 'plan-check.mjs', '--home', dir], git: mkGit({ dirty: true, commitAgoMs: H }), now: () => NOW, planMtime: () => null });
+  const out = JSON.parse(s.out());
+  assert.equal(out.decision, 'block');
+  assert.ok(out.reason.includes('Alpha has no plan file'), out.reason);
+});
+
 test('cleanup', () => rmSync(dir, { recursive: true, force: true }));

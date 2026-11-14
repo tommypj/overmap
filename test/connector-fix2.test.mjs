@@ -125,21 +125,21 @@ test('sanitiseError still cuts to 300 after masking', () => {
 });
 
 test('secrets signature includes ctime (a metadata-only change re-reads)', async () => {
-  const { getSecret, _resetSecretsCache, secretsHealth } = await import('../lib/secrets.mjs');
+  const { createSecrets } = await import('../lib/secrets.mjs');
   const { execFileSync } = await import('node:child_process');
-  _resetSecretsCache();
   const dir = mkdtempSync(join(tmpdir(), 'cockpit-sec2-'));
   const file = join(dir, 'secrets.json');
+  const s = createSecrets(dir);
   writeFileSync(file, JSON.stringify({ A: 'v1' }));
   execFileSync('icacls', [file, '/inheritance:r', '/grant:r', `${process.env.USERDOMAIN}\\${process.env.USERNAME}:F`], { stdio: 'ignore' });
   try {
-    assert.equal(getSecret('A', file), 'v1');
-    const first = secretsHealth(file).cachedAt;
+    assert.equal(s.getSecret('A'), 'v1');
+    const first = s.health().cachedAt;
     await new Promise((r) => setTimeout(r, 20));
     // an ACL change moves ctime but not mtime or size
     execFileSync('icacls', [file, '/grant', 'Everyone:R'], { stdio: 'ignore' });
-    getSecret('A', file);
-    assert.notEqual(secretsHealth(file).cachedAt, first);
-    assert.equal(secretsHealth(file).file, 'unprotected');
+    s.getSecret('A');
+    assert.notEqual(s.health().cachedAt, first);
+    assert.equal(s.health().file, 'unprotected');
   } finally { rmSync(dir, { recursive: true, force: true }); void utimesSync; }
 });

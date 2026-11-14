@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDb } from '../lib/db.mjs';
@@ -137,7 +137,7 @@ test('an unknown cadence is logged and not scheduled', () => {
   const orig = console.error;
   console.error = (m) => errs.push(String(m));
   try {
-    const s = startConnectorScheduler({ DASH_REGISTRY: 'none.json', DASH_DATA: 'none.json' }, {
+    const s = startConnectorScheduler({ home: 'no-such-home' }, {
       connectors: [stub({ id: 'odd', every: '3h' }), stub({ id: 'fine' })], db: {},
       setTimeoutFn: (fn, ms) => { timeouts.push(ms); return { unref() {} }; }, setIntervalFn: () => ({ unref() {} }),
     });
@@ -175,10 +175,11 @@ const NOMINAL = 45873;
 const config = { vaultProjectsDir: '/p', mocFile: '/m.md', allowedLogin: 'x@example.com', port: NOMINAL, architectureFile: '/a.md', memoryRoot: '/mem' };
 async function withApp(extra, fn, registry) {
   const dir = mkdtempSync(join(tmpdir(), 'cockpit-fix1api-'));
-  writeFileSync(join(dir, 'reg.json'), JSON.stringify(registry ?? { version: 1, projects: {} }));
-  writeFileSync(join(dir, 'projects.json'), JSON.stringify({ generatedAt: '2026-10-31T10:00:00Z', projects: [] }));
-  const env = { DASH_PORT: String(NOMINAL), DASH_NO_SCHEDULE: '1', DASH_DB: join(dir, 'c.db'), DASH_REGISTRY: join(dir, 'reg.json'), DASH_DATA: join(dir, 'projects.json') };
-  const server = createApp(config, env, extra);
+  mkdirSync(join(dir, 'data'));
+  writeFileSync(join(dir, 'registry.json'), JSON.stringify(registry ?? { version: 1, projects: {} }));
+  writeFileSync(join(dir, 'data', 'projects.json'), JSON.stringify({ generatedAt: '2026-10-31T10:00:00Z', projects: [] }));
+  const paths = { dbFile: join(dir, 'data', 'overmap.db') };
+  const server = createApp({ ...config, home: dir }, process.env, extra);
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const port = server.address().port;
   const get = (path) => new Promise((resolve, reject) => {
@@ -188,7 +189,7 @@ async function withApp(extra, fn, registry) {
       res.on('end', () => resolve({ status: res.statusCode, body: Buffer.concat(chunks).toString() }));
     }).on('error', reject);
   });
-  try { await fn({ get, env }); } finally {
+  try { await fn({ get, paths }); } finally {
     server.closeAllConnections?.();
     await new Promise((r) => server.close(r));
     try { rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); } catch { /* temp cleanup */ }
@@ -214,10 +215,10 @@ test('/api/events rejects since outside 1970-2100', async () => {
 });
 
 test('registry entries with health.url null appear as not_configured with the missing field, and stale facts are flagged', async () => {
-  await withApp({}, async ({ get, env }) => {
+  await withApp({}, async ({ get, paths }) => {
     const r = JSON.parse((await get('/api/connectors')).body);
     assert.deepEqual(r[0].projects[0], { project: 'T', status: 'not_configured', at: null, error: null, missing: ['connectors.health.url'] });
-    const db = openDb(env.DASH_DB);
+    const db = openDb(paths.dbFile);
     db.prepare("INSERT INTO facts(project, source, key, at, status, json) VALUES ('T','health','health.status','2026-10-30T00:00:00Z','stale','\"up\"')").run();
     db.close();
     const f = JSON.parse((await get('/api/facts?id=T')).body);
