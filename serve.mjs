@@ -26,7 +26,6 @@ export function createApp(config, env = process.env, extra = {}) {
   const routes = createRoutes({ config, env, secrets, getSecret: secrets.getSecret, ...rest });
   const server = createServer(createHandler({ config, port: config.port, routes }));
   server.on('close', routes.close);
-  server.on('close', () => { routes.runner.stopAll(); }); // no orphaned children when the server goes down
   return server;
 }
 

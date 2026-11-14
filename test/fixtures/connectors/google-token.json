@@ -1,0 +1,7 @@
+{
+  "_source": "docs: https://developers.google.com/identity/protocols/oauth2/web-server#offline",
+  "access_token": "ya29.fixture-access-token",
+  "expires_in": 3600,
+  "scope": "https://www.googleapis.com/auth/webmasters.readonly https://www.googleapis.com/auth/analytics.readonly",
+  "token_type": "Bearer"
+}

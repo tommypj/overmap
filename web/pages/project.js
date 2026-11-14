@@ -1,6 +1,4 @@
-import { api, branchText, statusPill, h, enc, pill, unknownPill, bytes, ago, baseName, winPath, factNote, lastWork, isPhone } from '../ui.js';
-import { runFlow, postAction, outputPanel, stateText, statePillClass } from '../actions.js';
-import { backupSummary } from './overview.js';
+import { branchText, statusPill, h, enc, pill, unknownPill, bytes, ago, baseName, winPath, factNote, lastWork, isPhone } from '../ui.js';
 import { renderDev } from './dev.js';
 import { renderFiles } from './files.js';
 import { renderMedia } from './media.js';
@@ -50,93 +48,10 @@ function card(p, data) {
       return hit ? h('a', { class: 'pill link', href: '#/p/' + enc(hit.id), title: u }, hit.name) : pill(name, '');
     })));
   }
-  const b = backupSummary(p);
-  c.append(row('Backup', pill(b.text, b.cls), factNote(p.backup)));
   c.append(row('Size', p.size ? pill(`code ${bytes(p.size.code)}`) : unknownPill('size not measured'), p.size ? pill(`deps ${bytes(p.size.deps)}`) : null,
     h('span', { class: 'k inline' }, 'Last work'),
     lw.at == null ? unknownPill(p.repos?.length ? 'no commit date' : 'no repo') : pill(ago(lw.at))));
-  const bar = h('div', { class: 'actions' });
-  c.append(bar);
-  actionsBar(p, bar);
   return c;
-}
-
-// Actions bar: Open-in buttons (laptop only) and one row per declared action (Start/Stop/Restart/Output).
-const OPEN_IN = [['explorer', 'Explorer'], ['vscode', 'VS Code'], ['terminal', 'Terminal'], ['claude', 'Claude']];
-
-export async function actionsBar(p, el) {
-  const panels = new Map(); // action id -> open outputPanel, kept across re-renders
-  const flash = (row, text) => {
-    row.querySelector('.note.risk')?.remove();
-    const n = h('p', { class: 'note risk' }, text);
-    row.append(n);
-    setTimeout(() => n.remove(), 6000);
-  };
-  const run = async (row, a, op, btn) => {
-    if (btn) btn.disabled = true;
-    const r = await runFlow({ path: 'api/actions/run', body: { id: p.id, action: a.id, op }, title: `${op} ${a.label}` });
-    await load(); // re-render with fresh state either way
-    const fresh = el.querySelector(`[data-act="${a.id}"]`);
-    fresh?.querySelector('button')?.focus(); // the sheet gave focus back to a node that no longer exists
-    if (r.error && !r.cancelled) flash(fresh ?? el, r.error);
-  };
-  const openLocal = async (what, holder) => {
-    const r = await postAction('api/actions/open-local', { id: p.id, what });
-    if (r.error) flash(holder, r.error);
-  };
-
-  function actionRow(a) {
-    const st = a.state;
-    const running = st?.status === 'running';
-    const row = h('div', { class: 'actwrap', 'data-act': a.id });
-    const line = h('div', { class: 'actrow' },
-      h('span', { class: 'lbl' }, a.label),
-      a.cmd ? h('span', { class: 'mono clip', title: a.cmd }, a.cmd) : null,
-      h('span', { class: 'stat' }, a.error ? pill(a.error, 'warn') : pill(stateText(st), statePillClass(st)),
-        a.port != null ? (a.portOpen == null ? null : pill(`:${a.port} ${a.portOpen ? 'open' : 'closed'}`, a.portOpen ? 'ok' : '')) : null,
-        ));
-    if (!a.error) {
-      const btns = h('span', { class: 'btns' });
-      if (!running) btns.append(h('button', { class: 'btn', type: 'button', on: { click: (e) => run(row, a, 'start', e.currentTarget) } }, 'Start'));
-      else btns.append(h('button', { class: 'btn danger', type: 'button', on: { click: (e) => run(row, a, 'stop', e.currentTarget) } }, 'Stop'),
-        h('button', { class: 'btn', type: 'button', on: { click: (e) => run(row, a, 'restart', e.currentTarget) } }, 'Restart'));
-      if (st) {
-        btns.append(h('button', { class: 'btn', type: 'button', on: { click: () => {
-          const open = panels.get(a.id);
-          if (open) { open.stop(); open.remove(); panels.delete(a.id); return; }
-          const panel = outputPanel(p.id, a.id, { onState: (s) => { if ((s?.status ?? null) !== (a.state?.status ?? null)) { a.state = s; load(); } } });
-          panels.set(a.id, panel);
-          row.append(panel);
-        } } }, 'Output'));
-      }
-      line.append(btns);
-    }
-    row.append(line);
-    if (panels.has(a.id)) row.append(panels.get(a.id));
-    return row;
-  }
-
-  async function load() {
-    const [ar, who] = await Promise.all([api(`api/actions?id=${enc(p.id)}`), api('api/whoami')]);
-    if (!el.isConnected) { for (const pn of panels.values()) pn.stop(); return; }
-    el.replaceChildren();
-    if (ar.error) { el.append(h('p', { class: 'note risk' }, `Actions unknown (${ar.error})`)); return; }
-    const d = ar.data || {};
-    const body = h('div', { class: 'actbody' });
-    const local = d.local || {};
-    if (local.available) {
-      const holder = h('div', { class: 'actwrap' });
-      holder.append(h('div', { class: 'row' }, h('span', { class: 'k' }, 'Open in'),
-        OPEN_IN.map(([what, label]) => h('button', { class: 'btn', type: 'button', on: { click: () => openLocal(what, holder) } }, label))));
-      body.append(holder);
-    } else {
-      body.append(h('p', { class: 'muted small' }, local.why ?? `Open-in buttons work on the laptop only${who.data?.class ? ` (you are on ${who.data.class})` : ''}.`));
-    }
-    if (d.error) body.append(h('p', { class: 'note risk' }, `${d.error} (see actions/README.md in the cockpit folder)`));
-    for (const a of d.actions || []) body.append(actionRow(a));
-    el.append(body);
-  }
-  await load();
 }
 
 export async function renderProject(el, ctx) {

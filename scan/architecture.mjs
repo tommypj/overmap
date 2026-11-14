@@ -1,7 +1,7 @@
 // Generates /projects/ARCHITECTURE.md from the registry + scanned facts. Never hand-edited.
 import { dirname } from 'node:path';
 
-export function writeArchitecture(projects, registry, config, unmapped = []) {
+export function writeArchitecture(projects, registry, config) {
   const byId = new Map(projects.map((p) => [p.id, p]));
   const vault = dirname(String(config.vaultProjectsDir ?? '').replaceAll('\\', '/'));
   const out = [
@@ -42,10 +42,6 @@ export function writeArchitecture(projects, registry, config, unmapped = []) {
     const pct = p?.plan?.value?.percent;
     out.push(`- plan: ${typeof pct === 'number' ? `${pct}%` : 'none'}`, '');
   }
-  out.push('# Unmapped folders and agent projects', '');
-  if (unmapped.length === 0) out.push('None.');
-  else for (const u of unmapped) out.push(`- \`${u.path}\` (${u.why})`);
-  out.push('');
   out.push(
     '# Plan format', '',
     '- `## ` is a milestone, `### ` is a sprint; items are checkbox lines at any indent.',

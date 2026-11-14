@@ -8,7 +8,7 @@ import { buildProject, buildProjectSafe } from '../scan/project.mjs';
 
 const tmp = () => fs.mkdtempSync(join(os.tmpdir(), 'proj-'));
 const fwd = (p) => p.replaceAll('\\', '/');
-const ctx = { snapshot: { at: 'x', error: 'none' }, cache: {}, skipSize: true, attentionCtx: { registeredRoots: [], toolHomes: [] }, refs: async () => ({ at: 'x', value: [] }) };
+const ctx = { cache: {}, skipSize: true, attentionCtx: { registeredRoots: [], toolHomes: [] } };
 const entry = (home, extra = {}) => ({ id: 'p', name: 'P', family: 'Other', kind: 'project', home, repos: [], worktreesManaged: [], oldPaths: [], protected: false, note: null, uses: [], connectors: {}, ...extra });
 
 test('PROJECT.md with family: 42 and memory: single.md scans without throwing', async () => {
@@ -41,4 +41,12 @@ test('updateMoc leaves the file alone when no marker or heading matches, never c
   assert.equal(fs.statSync(f).mtimeMs, before);
   assert.equal(updateMoc(join(d, 'missing.md'), 'TABLE'), false);
   assert.equal(fs.existsSync(join(d, 'missing.md')), false);
+});
+
+test('project has no services, backup or references keys', async () => {
+  const d = fwd(tmp());
+  const p = await buildProject(entry(d), ctx);
+  for (const k of ['services', 'backup', 'references']) assert.ok(!(k in p), k);
+  const f = await buildProjectSafe(entry('/x', { repos: null }), ctx);
+  for (const k of ['services', 'backup', 'references']) assert.ok(!(k in f), k);
 });

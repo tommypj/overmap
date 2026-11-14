@@ -14,9 +14,7 @@ import { createRoutes } from '../server/api.mjs';
 const SERVE = fileURLToPath(new URL('../serve.mjs', import.meta.url));
 import { createHandler } from '../server/router.mjs';
 import { cachedSize } from '../scan/assemble.mjs';
-import { maskServices } from '../scan/project.mjs';
 
-const MASK = '\u2039secret\u203A';
 const base = mkdtempSync(join(tmpdir(), 'hard-'));
 test.after(() => rmSync(base, { recursive: true, force: true }));
 
@@ -115,28 +113,7 @@ test('--no-size reuses the cached size, null when uncached', () => {
   assert.equal(cachedSize('/y', cache), null);
 });
 
-test('service paths, task arguments and pm2 scripts are secret-masked', () => {
-  const v = maskServices({
-    services: [{ name: 's', path: 'x.exe --token=pcp_board_abc12345' }], // privacy-ok
-    tasks: [{ name: 't', actions: [{ execute: 'node', arguments: 'a.js sk-ant-abcdefghijklmnopqrstuv' }] }], // privacy-ok
-    pm2: [{ name: 'p', script: 'run.js --k=ghp_abcdef' }],
-  });
-  assert.ok(!JSON.stringify(v).match(/pcp_board_abc|sk-ant-abc|ghp_abc/));
-  assert.ok(v.services[0].path.includes(MASK));
-});
 
-test('/api/live masks secrets in command lines', async () => {
-  const snapshot = async () => ({ at: 1, value: { processes: [{ pid: 1, ppid: 0, name: 'node.exe', cmd: 'node /live/proj/a.js --token=pcp_board_abc12345', created: '2026-01-01T00:00:00Z' }], listeners: [] } }); // privacy-ok
-  const config = { vaultProjectsDir: '/p', mocFile: '/m.md', allowedLogin: 'a@example.com', port: 45873, architectureFile: '/a.md', memoryRoot: '/m' };
-  const routes = createRoutes({ config: { ...config, home: homeWith('live-home', [{ id: 'L', name: 'L', roots: ['/live/proj'] }]) }, snapshot });
-  const srv = http.createServer(createHandler({ config, port: 45873, routes }));
-  await listen(srv);
-  try {
-    const r = await get(srv.address().port, '/api/live?id=L', { host: '127.0.0.1:45873' });
-    assert.ok(r.body.includes(MASK), r.body);
-    assert.ok(!r.body.includes('pcp_board_abc'));
-  } finally { await closeServer(srv); routes.close(); }
-});
 
 test('startServer reports a port in use through onError', async () => {
   const blocker = http.createServer();
@@ -160,8 +137,7 @@ test('startServer takes the port over from an older copy of itself', async () =>
   const p = blocker.address().port;
   let killed = null;
   const srv = startServer(
-    { home: configHome('e3-home', p), noSchedule: true },
-    {
+    { home: configHome('e3-home', p), noSchedule: true,
       ownerOf: async () => '4242',
       cmdLineOf: async () => `"C:\\Program Files\\nodejs\\node.exe" ${SERVE}`, // privacy-ok
       kill: (pid) => { killed = pid; blocker.close(); },

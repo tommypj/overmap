@@ -2,7 +2,7 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { norm } from '../lib/paths.mjs';
-import { maskSecrets } from './refs.mjs';
+import { maskSecrets } from '../lib/mask.mjs';
 
 const isCount = (v) => Number.isInteger(v) && v >= 0;
 

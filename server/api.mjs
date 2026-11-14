@@ -5,8 +5,6 @@ import { fileURLToPath } from 'node:url';
 import { sendJson, BadRequest } from './router.mjs';
 import { classify } from './auth.mjs';
 import { resolveSafe, listDir, indexFiles, sendFile, NotFound, Forbidden } from './fsapi.mjs';
-import { maskSecrets } from '../scan/refs.mjs';
-import { systemSnapshot, matchProcesses, isProtected, currentUser, sameUser } from '../scan/system.mjs';
 import { loadRegistry } from '../registry.mjs';
 import { openDb } from '../lib/db.mjs';
 import { CONNECTORS, byId } from '../connectors/index.mjs';
@@ -16,11 +14,8 @@ import { maskText } from '../lib/mask.mjs';
 import { createSecrets } from '../lib/secrets.mjs';
 import { createTokens } from '../lib/csrf.mjs';
 import { createActionRoutes } from './actions.mjs';
-import { createRunner } from '../lib/runner.mjs';
-import { ACTIONS_DIR } from '../lib/actions-config.mjs';
 
 const HERE = fileURLToPath(new URL('..', import.meta.url));
-const LIVE_TTL = 30_000;
 const INDEX_TTL = 10 * 60_000;
 const EVENTS_DEFAULT_MS = 24 * 3_600_000;
 const EVENTS_MAX_MS = 7 * 24 * 3_600_000;
@@ -45,12 +40,11 @@ function firstTeamId(reg) {
   return null;
 }
 
-export function createRoutes({ config, env = process.env, now = Date.now, snapshot = systemSnapshot, connectors = CONNECTORS, secrets = createSecrets(config.home), getSecret = secrets.getSecret, fetchJsonImpl = fetchJson, tokens = createTokens({ now }), runner = createRunner({ now }), spawnOpen, codeExe, killTree, rescan, isScanning, actionsDir = ACTIONS_DIR }) {
+export function createRoutes({ config, now = Date.now, connectors = CONNECTORS, secrets = createSecrets(config.home), getSecret = secrets.getSecret, fetchJsonImpl = fetchJson, tokens = createTokens({ now }), rescan, isScanning }) {
   const connById = (id) => connectors.find((c) => c.id === id) ?? byId(id);
   const dataFile = join(config.home, 'data', 'projects.json');
   const webDir = resolve(HERE, 'web');
   const registryFile = join(config.home, 'registry.json');
-  const legacyFile = join(HERE, 'legacy', 'dashboard.html');
 
   let db = null;
   const getDb = () => (db ??= openDb(join(config.home, 'data', 'overmap.db')));
@@ -66,18 +60,6 @@ export function createRoutes({ config, env = process.env, now = Date.now, snapsh
     try { registry = loadRegistry(registryFile); } catch { registry = new Map(); }
     return registry;
   };
-
-  let snap = null; // { at: ms, promise }
-  const getSnapshot = () => {
-    if (!snap || now() - snap.at > LIVE_TTL) {
-      const entry = { at: now(), promise: snapshot() };
-      entry.promise.catch(() => { if (snap === entry) snap = null; });
-      snap = entry;
-    }
-    return snap.promise;
-  };
-
-  const refreshSnapshot = () => { snap = null; return getSnapshot(); };
 
   const indexCache = new Map(); // `${id}\0${kind}` -> { at, value }
 
@@ -112,24 +94,15 @@ export function createRoutes({ config, env = process.env, now = Date.now, snapsh
     const cls = classify(req, config);
     return { class: cls, login: cls === 'tailnet' ? String(req.headers['tailscale-user-login'] ?? '') : null };
   };
-  const actionRoutes = createActionRoutes({ now, getDb, getRegistry, getSnapshot, refreshSnapshot, runner, tokens, who, env, spawnOpen, codeExe, killTree, rescan, isScanning, registryFile, projectsDir: config.projectsDir, vaultDir: config.vaultProjectsDir, readProjects, actionsDir });
+  const actionRoutes = createActionRoutes({ now, getDb, getRegistry, tokens, who, rescan, isScanning, registryFile, projectsDir: config.projectsDir, vaultDir: config.vaultProjectsDir });
 
   async function routes(ctx) {
     const { req, res, url, path, config: cfg } = ctx;
-    if (path === '/api/csrf' || path === '/api/audit' || path === '/api/actions' || path.startsWith('/api/actions/')) return actionRoutes(ctx);
+    if (path === '/api/csrf' || path === '/api/audit' || path.startsWith('/api/actions/')) return actionRoutes(ctx);
     switch (path) {
       case '/':
         serveStatic(req, res, 'index.html');
         return true;
-      case '/legacy':
-        sendFile(req, res, legacyFile, { safeTypes: false, disposition: false, cacheControl: 'no-cache', checkSecrets: false });
-        return true;
-      case '/setup': {
-        const buf = Buffer.concat([readFileSync(join(HERE, 'docs', 'SETUP-stage2.md')), Buffer.from('\n\n---\n\n'), readFileSync(join(HERE, 'docs', 'SETUP-stage3.md')), Buffer.from('\n\n---\n\n'), readFileSync(join(HERE, 'docs', 'SETUP-stage4.md'))]);
-        res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'content-length': buf.length, 'cache-control': 'no-cache' });
-        res.end(req.method === 'HEAD' ? undefined : buf);
-        return true;
-      }
       case '/api/whoami': {
         const cls = classify(req, cfg);
         const login = cls === 'tailnet' ? String(req.headers['tailscale-user-login'] ?? '') : null;
@@ -140,20 +113,6 @@ export function createRoutes({ config, env = process.env, now = Date.now, snapsh
         const buf = Buffer.from(JSON.stringify(readProjects()));
         res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'content-length': buf.length });
         res.end(req.method === 'HEAD' ? undefined : buf);
-        return true;
-      }
-      case '/api/live': {
-        const p = project(url);
-        const s = await getSnapshot();
-        const matched = s.value ? matchProcesses(s.value, rootsOf(p)) : null;
-        const reg = getRegistry();
-        const me = currentUser(env);
-        const processes = matched === null ? null : matched.map((proc) => {
-          const prot = isProtected(proc, reg) || reg.get(p.id)?.protected === true;
-          const why = prot ? 'protected' : proc.user == null ? 'owner unknown' : !sameUser(proc.user, me) ? 'not your process' : null;
-          return { ...proc, cmd: proc.cmd == null ? proc.cmd : maskSecrets(proc.cmd), protected: prot, stoppable: { ok: why === null, why } };
-        });
-        sendJson(req, res, 200, { at: s.at, processes, ...(s.error ? { error: s.error } : {}) });
         return true;
       }
       case '/api/ls': {
@@ -318,7 +277,6 @@ export function createRoutes({ config, env = process.env, now = Date.now, snapsh
     }
   }
   routes.tokens = tokens;
-  routes.runner = runner;
   routes.close = () => { try { db?.close(); } catch { /* already closed */ } db = null; };
   return routes;
 }

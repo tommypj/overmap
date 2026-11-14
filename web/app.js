@@ -65,7 +65,7 @@ function collapsible(key, title, items) {
 function renderSide(route) {
   clear(side);
   const cur = route[0] === 'p' ? route[1] : null;
-  side.append(h('div', { class: 'brand' }, h('a', { href: '#/' }, 'Project cockpit')));
+  side.append(h('div', { class: 'brand' }, h('a', { href: '#/' }, 'Overmap')));
   if (state.fresh) side.append(newScanButton());
   side.append(h('a', { class: 'navitem' + (route.length === 0 ? ' on' : ''), href: '#/' }, 'Overview'));
   if (!state.data) {
@@ -89,16 +89,10 @@ function renderSide(route) {
   if (t) side.append(t);
   const pk = collapsible('parked', 'Parked', g.parked.map((p) => navItem(p, cur)));
   if (pk) side.append(pk);
-  const un = state.data.unmapped || [];
-  const u = collapsible('unmapped', 'Unmapped (folders, Codex, Claude)', un.map((x) =>
-    h('div', { class: 'navitem static' + (x.exists === false ? ' gone' : ''), title: `${x.path} (${x.why})` }, h('span', { class: 'navname mono' }, x.path.split('/').slice(-1)[0]), h('span', { class: 'age' }, x.why))));
-  if (u) side.append(u);
   side.append(h('div', { class: 'grp' }, 'Cockpit'),
-    h('a', { class: 'navitem' + (route[0] === 'live' ? ' on' : ''), href: '#/live' }, 'Live'),
     h('a', { class: 'navitem' + (route[0] === 'new' ? ' on' : ''), href: '#/new' }, 'New project'),
     h('a', { class: 'navitem' + (route[0] === 'audit' ? ' on' : ''), href: '#/audit' }, 'Actions log'),
-    h('a', { class: 'navitem' + (route[0] === 'settings' ? ' on' : ''), href: '#/settings' }, 'Settings'),
-    h('a', { class: 'navitem', href: 'legacy' }, 'Old board'));
+    h('a', { class: 'navitem' + (route[0] === 'settings' ? ' on' : ''), href: '#/settings' }, 'Settings'));
 }
 
 function newScanButton() {
@@ -138,7 +132,6 @@ async function route() {
     else if (r[0] === 'settings') await renderSettings(main, ctx);
     else if (r[0] === 'new') await renderNewProject(main, ctx);
     else if (r[0] === 'audit') await renderAudit(main, ctx);
-    else if (r[0] === 'live') { location.hash = '#/'; return; } // Live is per project
     else main.append(h('h1', null, 'Not found'), h('p', null, h('a', { href: '#/' }, 'Back to the overview')));
   } catch (e) {
     console.error(e);

@@ -15,27 +15,6 @@ export function repoTotals(p) {
   return { count: repos.length, uncommitted, unpushed, unkU, unkP };
 }
 
-export function backupSummary(p) {
-  const f = p.backup;
-  if (!f) return { text: 'unknown (not scanned)', cls: 'unknown' };
-  if (f.error) return { text: `unknown (${f.error})`, cls: 'unknown' };
-  const targets = f.value?.targets;
-  if (!targets) return { text: 'unknown (no targets)', cls: 'unknown' };
-  if (!targets.length) return { text: 'no backup targets', cls: 'warn' };
-  const bad = targets.filter((t) => t.error);
-  const ok = targets.filter((t) => !t.error);
-  const uncovered = ok.filter((t) => t.covered === false);
-  const covered = ok.filter((t) => t.covered === true);
-  const partial = covered.filter((t) => t.partial).length;
-  const covUnknown = ok.filter((t) => t.covered == null);
-  let text = `${covered.length}/${covered.length + uncovered.length} covered`;
-  if (covUnknown.length) text += `, ${covUnknown.length} coverage unknown`;
-  if (partial) text += `, ${partial} partial`;
-  if (bad.length) text += `, ${bad.length} unknown (${bad[0].error})`;
-  const cls = uncovered.length ? 'risk' : bad.length || covUnknown.length || partial ? 'warn' : '';
-  return { text: uncovered.length ? `${text}, not covered by ${uncovered.map((t) => t.target).join(', ')}` : text, cls };
-}
-
 function totalsCell(p) {
   const t = repoTotals(p);
   if (t.none) return h('span', { class: 'muted' }, 'no repo');
@@ -186,14 +165,11 @@ export async function renderOverview(el, ctx) {
 
   const rank = (p) => (lastWork(p).at ?? 0);
   const rows = [...active].sort((a, b) => riskCount(b) - riskCount(a) || rank(b) - rank(a) || a.name.localeCompare(b.name));
-  const live = new Map();
   const deltaCells = new Map();
   const dotCells = new Map();
   const tbody = h('tbody');
   for (const p of rows) {
     const lw = lastWork(p);
-    const running = h('td', { class: 'num' }, '…');
-    live.set(p.id, running);
     const dot = h('span', { class: 'dotslot' }, healthDot(null));
     dotCells.set(p.id, dot);
     const delta = h('td', { class: 'delta' }, '…');
@@ -204,31 +180,15 @@ export async function renderOverview(el, ctx) {
       h('td', null, flagsCell(p)),
       h('td', null, lw.at == null ? unknownPill(p.repos?.length ? 'no commit date' : 'no repo') : h('span', { title: new Date(lw.at).toISOString() }, ago(lw.at), lw.unknownSome ? h('span', { class: 'age block' }, 'some repos unknown') : null)),
       h('td', null, totalsCell(p)),
-      running,
-      delta,
-      h('td', null, (() => { const b = backupSummary(p); return pill(b.text, b.cls); })())));
+      delta));
   }
   el.append(h('div', { class: 'tablewrap' }, h('table', { class: 'grid-table' },
-    h('thead', null, h('tr', null, ...['Project', 'Status', 'Attention', 'Last work', 'Repos', 'Running', 'Since you last looked', 'Backup'].map((t) => h('th', null, t)))), tbody)));
+    h('thead', null, h('tr', null, ...['Project', 'Status', 'Attention', 'Last work', 'Repos', 'Since you last looked'].map((t) => h('th', null, t)))), tbody)));
 
   const nameOf = (id) => d.projects.find((x) => x.id === id)?.name ?? id;
   const deltaNote = h('p', { class: 'age' }, deltaNoteText(lastVisit));
   el.insertBefore(deltaNote, el.querySelector('.tablewrap'));
   el.append(feedSection(ctx, nameOf));
 
-  // Running counts: lazy, three at a time, one request per visible project.
-  const queue = rows.map((p) => p.id);
-  const worker = async () => {
-    while (queue.length && !ctx.stale()) {
-      const id = queue.shift();
-      const cell = live.get(id);
-      const r = await api('api/live?id=' + enc(id));
-      if (ctx.stale()) return;
-      cell.replaceChildren();
-      if (r.error) cell.append(unknownPill(r.error));
-      else if (r.data.processes == null) cell.append(unknownPill(r.data.error || 'process list unavailable'));
-      else cell.append(String(r.data.processes.length));
-    }
-  };
-  await Promise.all([fillDeltas(ctx, lastVisit, deltaCells, deltaNote), fillHealth(ctx, dotCells), worker(), worker(), worker()]);
+  await Promise.all([fillDeltas(ctx, lastVisit, deltaCells, deltaNote), fillHealth(ctx, dotCells)]);
 }

@@ -5,30 +5,16 @@ import { basename } from 'node:path';
 import { readNote, parseBlockers } from '../lib/frontmatter.mjs';
 import { rootsOf } from '../registry.mjs';
 import { gitFacts } from './git.mjs';
-import { matchServices } from './system.mjs';
-import { backupFacts } from './backup.mjs';
 import { readTestResults } from './tests.mjs';
-import { findReferences, maskSecrets } from './refs.mjs';
 import { pickReader } from '../plan/reader.mjs';
 import { attentionFlags } from './attention.mjs';
 import { dirSize, cachedSize, memoryNotes, readCard } from './assemble.mjs';
-
-const maskOpt = (v) => (typeof v === 'string' ? maskSecrets(v) : v);
-export function maskServices(v) {
-  if (!v) return v;
-  return {
-    ...v,
-    services: v.services?.map((x) => ({ ...x, path: maskOpt(x.path) })) ?? v.services,
-    tasks: v.tasks?.map((t) => ({ ...t, actions: t.actions?.map((a) => ({ ...a, arguments: maskOpt(a.arguments) })) ?? t.actions })) ?? v.tasks,
-    pm2: v.pm2?.map((a) => ({ ...a, script: maskOpt(a.script) })) ?? v.pm2,
-  };
-}
 
 export const fail = (e) => ({ at: new Date().toISOString(), error: e?.message ?? String(e) });
 const str = (x) => String(x ?? '');
 const arr = (v) => (Array.isArray(v) ? v : v == null ? [] : [v]);
 
-// ctx = { snapshot, cache, skipSize, attentionCtx, refs? (override for tests) }
+// ctx = { cache, skipSize, attentionCtx }
 export async function buildProject(entry, ctx) {
   const home = entry.home;
   const exists = existsSync(home);
@@ -44,14 +30,7 @@ export async function buildProject(entry, ctx) {
   const discovered = repos.flatMap((r) => r.git.value?.worktrees?.map((w) => w.path) ?? []);
   const roots = rootsOf(entry, discovered);
 
-  const { snapshot } = ctx;
-  let services;
-  if (!snapshot || snapshot.error || !snapshot.value) services = fail(snapshot?.error ?? 'no system snapshot');
-  else { try { services = { at: snapshot.at, value: maskServices(matchServices(snapshot.value, roots)) }; } catch (e) { services = fail(e); } }
-
-  const backup = backupFacts(roots);
   const tests = readTestResults(roots);
-  const references = await (ctx.refs ?? findReferences)(roots).catch(fail);
 
   let plan;
   try { plan = { at: new Date().toISOString(), value: (await pickReader(home)?.read(home)) ?? null }; } catch (e) { plan = fail(e); }
@@ -80,7 +59,7 @@ export async function buildProject(entry, ctx) {
     roots,
     protected: entry.protected,
     worktreesManaged: entry.worktreesManaged,
-    repos, services, backup, tests, references, plan,
+    repos, tests, plan,
   };
   project.attention = attentionFlags(project, Date.now(), ctx.attentionCtx);
   return project;
@@ -96,7 +75,7 @@ export async function buildProjectSafe(entry, ctx) {
       path: entry.home, deploy: [], links: [], stack: [], blockers: [], exists: existsSync(entry.home),
       size: null, memory: [], kind: entry.kind, home: entry.home, uses: [], roots: [entry.home], protected: entry.protected,
       worktreesManaged: entry.worktreesManaged ?? [],
-      repos: [], services: null, backup: null, tests: null, references: null, plan: null,
+      repos: [], tests: null, plan: null,
       attention: [{ level: 'risk', text: `scan failed: ${e?.message ?? e}` }],
     };
   }

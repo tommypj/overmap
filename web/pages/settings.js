@@ -3,7 +3,7 @@ import { runFlow } from '../actions.js';
 
 export async function renderSettings(el, ctx) {
   el.append(h('h1', null, 'Settings'));
-  const [who, set, conns, files] = await Promise.all([api('api/whoami'), api('api/settings'), api('api/connectors'), api('api/actions/files')]);
+  const [who, set, conns] = await Promise.all([api('api/whoami'), api('api/settings'), api('api/connectors')]);
   if (ctx.stale()) return;
   const row = (k, v) => h('div', { class: 'row' }, h('span', { class: 'k wide' }, k), h('span', { class: 'rowbody mono' }, v));
   const unk = (r) => `unknown (${r.error})`;
@@ -29,8 +29,6 @@ export async function renderSettings(el, ctx) {
         rescanRow()));
   }
   el.append(connectorsSection(conns));
-  el.append(actionsFilesSection(files));
-  el.append(h('p', null, h('a', { href: 'setup' }, 'Setup guide'), ' · ', h('a', { href: 'legacy' }, 'Open the old board')));
 }
 
 function rescanRow() {
@@ -46,17 +44,6 @@ function rescanRow() {
     timer = setTimeout(() => { msg.textContent = ''; }, 6000);
   });
   return h('div', { class: 'row' }, h('span', { class: 'k wide' }, 'Scan now'), h('span', { class: 'rowbody' }, btn, msg));
-}
-
-export function actionsFilesSection(files) {
-  const head = h('h3', null, 'Actions files');
-  const log = h('p', null, 'Actions log: ', h('a', { href: '#/audit' }, 'open'));
-  if (files.error) return h('section', { class: 'blk' }, head, h('p', { class: 'muted' }, `unknown (${files.error})`), log);
-  const list = Array.isArray(files.data) ? files.data : [];
-  const rows = list.map((f) => h('div', { class: 'row' },
-    h('span', { class: 'k wide' }, f.project),
-    h('span', { class: 'rowbody' }, f.error ? pill(f.error, 'risk') : pill(`${f.count ?? 'unknown'} action${f.count === 1 ? '' : 's'}`))));
-  return h('section', { class: 'blk' }, head, ...(rows.length ? rows : [h('p', { class: 'muted' }, 'No actions files yet (actions/<project-id>.json)')]), log);
 }
 
 const STATUS = {

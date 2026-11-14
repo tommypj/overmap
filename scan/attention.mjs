@@ -4,7 +4,6 @@ import { isUnder, norm } from '../lib/paths.mjs';
 // about the thing itself; at most a "facts incomplete" warning.
 const DAY = 86400000;
 const BLOCKER_DAYS = 14;
-const BACKUP_HOURS = 36;
 
 // ctx = { registeredRoots, toolHomes } (all registry roots / homes of kind 'tool'), used to decide which discovered
 // worktrees are unmapped.
@@ -42,11 +41,5 @@ export function attentionFlags(p, now = Date.now(), ctx = { registeredRoots: [],
     if (age > BLOCKER_DAYS) warn(`blocker open ${Math.floor(age)} days: ${b.text}`);
   }
 
-  const backupHost = p.backup?.value?.targets?.find((t) => t.target === 'backup-host' && !t.error);
-  if (backupHost) {
-    if (backupHost.covered === false) risk('not covered by backup-host backup');
-    if (backupHost.finished && now - Date.parse(backupHost.finished) > BACKUP_HOURS * 3600000) warn(`backup-host backup older than ${BACKUP_HOURS} h`);
-    if (typeof backupHost.exitCode === 'number' && backupHost.exitCode !== 0 && backupHost.exitCode !== 3) warn(`backup-host backup failed (exit ${backupHost.exitCode})`);
-  }
   return flags;
 }

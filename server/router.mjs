@@ -5,8 +5,6 @@ import { originOk, readJsonBody } from './body.mjs';
 
 const CSP = "default-src 'self'; img-src 'self' data:; media-src 'self'; style-src 'self'; script-src 'self'";
 
-const LEGACY_CSP = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:";
-
 export function stripPrefix(pathname) {
   if (pathname === '/projects' || pathname === '/projects/') return '/';
   return pathname.startsWith('/projects/') ? pathname.slice('/projects'.length) : pathname;
@@ -41,7 +39,6 @@ export function createHandler({ config, port, routes }) {
       try { url = new URL(String(req.url).replace(/^\/{2,}/, '/'), 'http://localhost'); } catch { throw new BadRequest('bad url'); }
       const path = stripPrefix(url.pathname);
       if (path.startsWith('/api/')) res.setHeader('cache-control', 'no-store');
-      if (path === '/legacy') res.setHeader('content-security-policy', LEGACY_CSP);
       let body;
       if (req.method === 'POST') {
         // POST exists only for actions; the origin is checked before a single body byte is read.

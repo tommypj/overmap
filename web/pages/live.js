@@ -199,7 +199,7 @@ function eventsBlock(c) {
 function tileFor(def, c) {
   const rel = def.conns.filter((id) => c.cfg[id] !== undefined || Object.keys(c.facts[id] || {}).length > 0);
   if (def.events) {
-    if (!c.events.length && !c.eventsError && !ADMIN.some((id) => c.cfg[id] !== undefined)) return null;
+    if (!c.events.length && !c.eventsError) return null;
   } else if (!rel.length) return null;
   const upd = def.events ? null : newestAt(rel, c.facts);
   const tile = h('section', { class: 'tile' },

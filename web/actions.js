@@ -1,5 +1,5 @@
-// Actions client: csrf cache, POST helper, confirm sheet, live output panel. No document access at import time.
-import { h, ago, enc, pill } from './ui.js';
+// Actions client: csrf cache, POST helper, confirm sheet. No document access at import time.
+import { h } from './ui.js';
 
 // ---- csrf ------------------------------------------------------------------
 let csrf = null; // { token, expiresAt }
@@ -67,101 +67,4 @@ export function confirmSheet({ title, detail = [], labels = ['Run', 'Cancel'] })
     document.body.append(sheet);
     cancel.focus();
   });
-}
-
-// ---- state helpers ---------------------------------------------------------
-export function stateText(s) {
-  if (!s) return 'idle';
-  if (s.status === 'running') return 'running since ' + ago(s.startedAt);
-  if (s.status === 'exited') return `exited ${s.exitCode ?? 'unknown'} ${ago(s.endedAt)}`;
-  if (s.status === 'killed') return 'killed ' + ago(s.endedAt);
-  if (s.status === 'failed') return 'failed: ' + (s.error ?? 'unknown');
-  return 'unknown';
-}
-export function statePillClass(s) {
-  if (!s) return '';
-  if (s.status === 'running') return 'ok';
-  if (s.status === 'exited') return s.exitCode === 0 ? '' : 'warn';
-  if (s.status === 'killed') return 'warn';
-  if (s.status === 'failed') return 'risk';
-  return 'unknown';
-}
-
-// ---- output panel ----------------------------------------------------------
-const MAX_LINES = 1000;
-const POLL_MS = 1500;
-
-export function outputPanel(projectId, actionId, { onState } = {}) {
-  const status = h('div', { class: 'row outstatus' });
-  const stopBtn = h('button', { class: 'btn danger', type: 'button', hidden: true, on: { click: onStop } }, 'Stop');
-  const dropped = h('div', { class: 'muted small', hidden: true });
-  const pre = h('pre', { class: 'out mono' });
-  const panel = h('div', { class: 'outpanel' }, h('div', { class: 'row between' }, status, stopBtn), dropped, pre);
-  let errCount = 0, lastRunning = false;
-  let after = 0, timer = null, ended = false, seenAttached = false, lastStatus = undefined, tailDone = false;
-
-  function render(state) {
-    status.replaceChildren(pill(stateText(state), statePillClass(state)),
-      state?.pid != null ? h('span', { class: 'age' }, `pid ${state.pid}`) : null,
-      state?.startedAt ? h('span', { class: 'age' }, `started ${ago(state.startedAt)}`) : null);
-    stopBtn.hidden = state?.status !== 'running';
-  }
-  function append(lines) {
-    if (!lines.length) return;
-    const pinned = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 8;
-    for (const l of lines) pre.append(document.createTextNode(l.s + '\n'));
-    while (pre.childNodes.length > MAX_LINES) pre.firstChild.remove();
-    if (pinned) pre.scrollTop = pre.scrollHeight;
-  }
-  async function tick() {
-    timer = null;
-    if (ended) return;
-    if (panel.isConnected) seenAttached = true;
-    else if (seenAttached) { ended = true; return; } // removed from the page (route change): stop polling
-    let r;
-    try {
-      const res = await fetch(`api/actions/output?id=${enc(projectId)}&action=${enc(actionId)}&after=${after}`, { headers: { accept: 'application/json' } });
-      r = res.ok ? await res.json() : { none: res.status === 404, error: `HTTP ${res.status}` };
-    } catch (e) { r = { error: e.message || 'network error' }; }
-    if (ended) return;
-    if (r.none) { render(null); pre.replaceChildren('(no output yet)'); return; }
-    if (r.error) {
-      errCount++;
-      status.replaceChildren(pill(`output unknown (${r.error})`, 'warn'));
-      if (errCount >= 3 && !lastRunning) return; // persistent error while not running: stop polling, error stays shown
-      schedule();
-      return;
-    }
-    errCount = 0;
-    lastRunning = r.state?.status === 'running';
-    if (pre.firstChild && pre.childNodes.length === 1 && pre.textContent === '(no output yet)') pre.replaceChildren();
-    after = r.next ?? after;
-    append(r.lines || []);
-    if (r.dropped) { dropped.hidden = false; dropped.textContent = `dropped ${r.dropped} older lines`; }
-    render(r.state);
-    lastStatus = r.state?.status;
-    if (onState) onState(r.state);
-    if (r.state?.status === 'running') { tailDone = false; schedule(); }
-    else if (!tailDone) { tailDone = true; schedule(400); } // one more poll to catch the tail
-  }
-  function schedule(ms = POLL_MS) { if (!ended && timer == null) timer = setTimeout(tick, ms); }
-  async function onStop() {
-    stopBtn.disabled = true;
-    const r = await runFlow({ path: 'api/actions/run', body: { id: projectId, action: actionId, op: 'stop' }, title: 'Stop' });
-    stopBtn.disabled = false;
-    if (r.error && !r.cancelled) {
-      const n = h('p', { class: 'note risk' }, r.error);
-      panel.prepend(n);
-      setTimeout(() => n.remove(), 6000);
-    }
-    errCount = 0;
-    tailDone = false;
-    if (timer != null) clearTimeout(timer);
-    timer = null;
-    schedule(300);
-  }
-  panel.stop = () => { ended = true; if (timer != null) clearTimeout(timer); timer = null; };
-  panel.lastStatus = () => lastStatus;
-  timer = setTimeout(tick, 0);
-  return panel;
 }

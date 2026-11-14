@@ -8,11 +8,8 @@ import { loadConfig } from './lib/config.mjs';
 import { resolveHome, ensureHome } from './lib/home.mjs';
 import { norm } from './lib/paths.mjs';
 import { loadRegistry, rootsOf } from './registry.mjs';
-import { systemSnapshot } from './scan/system.mjs';
-import { unmappedFolders } from './scan/refs.mjs';
-import { readCodexProjects, readClaudeProjects, unmappedAgentProjects, mergeUnmapped } from './scan/agents.mjs';
 import { writeArchitecture } from './scan/architecture.mjs';
-import { buildProjectSafe, fail } from './scan/project.mjs';
+import { buildProjectSafe } from './scan/project.mjs';
 import { loadSizeCache, saveSizeCache, mocTable, updateMoc, writeArchitectureFile } from './scan/assemble.mjs';
 
 const SKIP_SIZE = process.argv.includes('--no-size');
@@ -27,13 +24,12 @@ const registry = loadRegistry(join(home, 'registry.json'));
 const cache = loadSizeCache(join(dataDir, 'size-cache.json'));
 const started = Date.now();
 
-const snapshot = await systemSnapshot().catch(fail);
 const allEntries = [...registry.values()];
 const attentionCtx = {
   registeredRoots: allEntries.flatMap((e) => rootsOf(e)),
   toolHomes: allEntries.filter((e) => e.kind === 'tool').map((e) => e.home),
 };
-const ctx = { snapshot, cache, skipSize: SKIP_SIZE, attentionCtx };
+const ctx = { cache, skipSize: SKIP_SIZE, attentionCtx };
 
 const projects = [];
 for (const entry of registry.values()) {
@@ -43,22 +39,14 @@ for (const entry of registry.values()) {
 }
 saveSizeCache(join(dataDir, 'size-cache.json'), cache);
 
-const extraRoots = projects.flatMap((p) => p.repos.flatMap((r) => r.git.value?.worktrees?.map((w) => w.path) ?? []));
-const folderUnmapped = unmappedFolders(registry, undefined, extraRoots);
-const codex = readCodexProjects();
-const claude = readClaudeProjects();
-for (const [n, r] of [['codex', codex], ['claude', claude]]) if (r.error) console.error(`agent projects (${n}) not read: ${r.error}`);
-const unmappedSources = { codex: codex.error ? { error: codex.error } : { count: codex.value.length }, claude: claude.error ? { error: claude.error } : { count: claude.value.length } };
-const agentUnmapped = unmappedAgentProjects(registry, [...(codex.value ?? []), ...(claude.value ?? [])], extraRoots);
-const unmapped = mergeUnmapped(folderUnmapped, agentUnmapped);
 const scanSeconds = Math.round((Date.now() - started) / 1000);
-const out = { generatedAt: new Date().toISOString(), scanSeconds, projects, unmapped, unmappedSources };
+const out = { generatedAt: new Date().toISOString(), scanSeconds, projects };
 writeFileSync(join(dataDir, 'projects.json'), JSON.stringify(out, null, 2));
 
 let mocWritten = false;
 let archStatus;
-try { archStatus = writeArchitectureFile(config.architectureFile ? norm(config.architectureFile) : null, writeArchitecture(projects, registry, config, unmapped)); } catch (e) { archStatus = 'failed'; console.error(`ARCHITECTURE.md not written: ${e.message}`); }
+try { archStatus = writeArchitectureFile(config.architectureFile ? norm(config.architectureFile) : null, writeArchitecture(projects, registry, config)); } catch (e) { archStatus = 'failed'; console.error(`ARCHITECTURE.md not written: ${e.message}`); }
 try { mocWritten = updateMoc(config.mocFile, mocTable(projects)); } catch (e) { console.error(`MOC not updated: ${e.message}`); }
 
 const risky = projects.filter((p) => p.attention.some((f) => f.level === 'risk')).length;
-console.log(`done: ${projects.length} projects in ${scanSeconds}s · ${risky} with risk flags · ${unmapped.length} unmapped · ARCHITECTURE.md ${archStatus === 'failed' ? 'FAILED' : archStatus === 'not-configured' ? 'not configured, not written' : 'written'} · MOC ${mocWritten ? 'refreshed' : 'not found, skipped'}`);
+console.log(`done: ${projects.length} projects in ${scanSeconds}s · ${risky} with risk flags · ARCHITECTURE.md ${archStatus === 'failed' ? 'FAILED' : archStatus === 'not-configured' ? 'not configured, not written' : 'written'} · MOC ${mocWritten ? 'refreshed' : 'not found, skipped'}`);

@@ -8,7 +8,7 @@ import { buildProject, buildProjectSafe } from '../scan/project.mjs';
 
 const BS = String.fromCharCode(92);
 const tmp = () => fs.mkdtempSync(join(os.tmpdir(), 'tests-fact-'));
-const ctx = { snapshot: { at: 'x', error: 'none' }, cache: {}, skipSize: true, attentionCtx: { registeredRoots: [], toolHomes: [] }, refs: async () => ({ at: 'x', value: [] }) };
+const ctx = { cache: {}, skipSize: true, attentionCtx: { registeredRoots: [], toolHomes: [] } };
 const entry = (home, extra = {}) => ({ id: 'p', name: 'P', family: 'Other', kind: 'project', home, repos: [], worktreesManaged: [], oldPaths: [], protected: false, note: null, uses: [], connectors: {}, ...extra });
 
 test('readTestResults: first root wins, defaults filled, command cut to 200', () => {

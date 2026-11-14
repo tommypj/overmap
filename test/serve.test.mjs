@@ -108,11 +108,6 @@ test('static: / and /web/*, 404 outside web/', async () => {
   assert.equal((await req('/web/missing.js')).status, 404);
 });
 
-test('/legacy serves HTML', async () => {
-  const r = await req('/legacy');
-  assert.equal(r.status, 200);
-  assert.match(r.headers['content-type'], /text\/html/);
-});
 
 test('Range: 206 with Content-Range, 416 when unsatisfiable, suffix and open ranges', async () => {
   const q = '/api/file?id=P1&root=0&path=ten.txt';
@@ -174,10 +169,6 @@ test('settings has secrets health, config, lastScan', async () => {
   assert.equal(s.lastScan, null);
 });
 
-test('/legacy gets a relaxed CSP, everything else stays strict', async () => {
-  assert.match((await req('/legacy')).headers['content-security-policy'], /'unsafe-inline'/);
-  assert.doesNotMatch((await req('/api/projects')).headers['content-security-policy'], /unsafe-inline/);
-});
 
 test('.js and .css from projects are served as text/plain', async () => {
   writeFileSync(join(root, 'x.js'), 'alert(1)');
@@ -198,11 +189,8 @@ test('missing projects.json is 404 no scan yet; // path cannot change host', asy
   assert.equal((await req('//api/projects')).status, 200);
 });
 
-test('GET /setup serves the setup guide as plain text', async () => {
-  const r = await req('/setup');
-  assert.equal(r.status, 200);
-  assert.match(r.headers['content-type'], /^text\/plain; charset=utf-8/);
-  assert.match(r.body.toString(), /secrets\.json/);
-  const t = await req('/projects/setup', { headers: tailnetHeaders() });
-  assert.equal(t.status, 200);
+test('/api/live, /legacy and /setup are gone', async () => {
+  assert.equal((await req('/api/live?id=P1')).status, 404);
+  assert.equal((await req('/legacy')).status, 404);
+  assert.equal((await req('/setup')).status, 404);
 });

@@ -12,7 +12,6 @@ const repo = (value, error) => ({
 const base = (over = {}) => ({
   id: 'p', kind: 'project', status: 'active', exists: true, home: '/p', worktreesManaged: [], blockers: [],
   repos: [repo({})],
-  backup: { at: 'x', value: { targets: [{ target: 'backup-host', finished: '2026-10-31T10:00:00Z', partial: false, covered: true }] } },
   ...over,
 });
 const texts = (p, lv) => attentionFlags(p, NOW).filter((f) => !lv || f.level === lv).map((f) => f.text);
@@ -48,15 +47,6 @@ test('archived and terminated have no flags', () => {
   assert.deepEqual(attentionFlags(base({ status: 'terminated', repos: [repo({ remotes: [] })] }), NOW), []);
 });
 
-test('backup: stale (40 h) warns, exit 3 (partial) is quiet, other exit codes warn, not covered is risk, unknown is silent', () => {
-  const bk = (t) => ({ at: 'x', value: { targets: [{ target: 'backup-host', ...t }] } });
-  assert.equal(texts(base({ backup: bk({ finished: '2026-10-29T20:00:00Z', partial: false, covered: true }) }), 'warn').some((t) => /older than 36 h/.test(t)), true);
-  assert.deepEqual(attentionFlags(base({ backup: bk({ finished: '2026-10-31T10:00:00Z', exitCode: 3, partial: true, covered: true }) }), NOW), []);
-  assert.equal(texts(base({ backup: bk({ finished: '2026-10-31T10:00:00Z', exitCode: 1, partial: false, covered: true }) }), 'warn').includes('backup-host backup failed (exit 1)'), true);
-  assert.equal(texts(base({ backup: bk({ finished: '2026-10-31T10:00:00Z', partial: false, covered: false }) }), 'risk').some((t) => /not covered by backup-host/.test(t)), true);
-  assert.deepEqual(attentionFlags(base({ backup: bk({ finished: null, partial: null, covered: null }) }), NOW), []);
-  assert.deepEqual(attentionFlags(base({ backup: { at: 'x', error: 'boom' } }), NOW), []);
-});
 
 test('blocker older than 14 days warns; recent does not; done ignored', () => {
   const b = (since, done = false) => ({ since, done, text: 'wait for X' });

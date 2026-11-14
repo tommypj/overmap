@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import { createHandler, sendJson } from '../server/router.mjs';
+import { createActionRoutes } from '../server/actions.mjs';
 
 const config = { allowedLogin: 'me@example.com' };
 async function withApp(fn) {
@@ -73,5 +74,26 @@ test('over-limit chunked body: 400 arrives and the socket closes', async () => {
     assert.equal(status, 400);
     assert.equal(closed, true);
     assert.equal(calls.length, 0);
+  });
+});
+
+async function withRoutes(routes, fn) {
+  const server = http.createServer();
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  const port = server.address().port;
+  server.on('request', createHandler({ config, port, routes }));
+  try { await fn({ port }); } finally { server.closeAllConnections?.(); server.close(); }
+}
+
+test('removed action routes are 404 (run, open-local, stop-process, output, files, list)', async () => {
+  const routes = createActionRoutes({ getDb: () => null, getRegistry: () => new Map(), tokens: { check: () => false }, who: () => ({ class: 'laptop', login: '' }) });
+  await withRoutes(routes, async ({ port }) => {
+    const origin = { origin: `http://127.0.0.1:${port}` };
+    for (const p of ['/api/actions/run', '/api/actions/open-local', '/api/actions/stop-process']) {
+      assert.equal((await req(port, p, { headers: origin, body: '{}' })).status, 404, p);
+    }
+    for (const p of ['/api/actions/files', '/api/actions/output', '/api/actions']) {
+      assert.equal((await req(port, p, { method: 'GET' })).status, 404, p);
+    }
   });
 });
