@@ -65,6 +65,7 @@ export function summaryPanel(sum) {
 export function askPanel(projectId, { post = postAction } = {}) {
   const input = h('input', { type: 'text', maxlength: 500, required: true, placeholder: 'Ask the graph', 'aria-label': 'Question for the graph', class: 'ask-input' });
   const button = h('button', { class: 'btn small', type: 'submit' }, 'Ask');
+  const note = h('p', { class: 'note risk', hidden: true });
   const out = h('pre', { class: 'ask-answer mono', 'aria-live': 'polite' });
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -74,9 +75,13 @@ export function askPanel(projectId, { post = postAction } = {}) {
     out.textContent = 'Asking\u2026';
     const r = await post('api/actions/ask-graph', { id: projectId, question });
     button.disabled = false;
-    out.textContent = r.error ? r.error : `${r.data.answer}${r.data.truncated ? '\n\n[answer cut at 64 KiB]' : ''}`;
+    const d = r.data;
+    const bad = !r.error && typeof d?.exitCode === 'number' && d.exitCode !== 0;
+    note.hidden = !bad;
+    note.textContent = bad ? `exited with code ${d.exitCode}` : '';
+    out.textContent = r.error ? r.error : `${d.answer}${d.truncated ? '\n\n[answer cut at 64 KiB]' : ''}`;
   };
-  return h('div', { class: 'ask-panel' }, h('form', { class: 'ask-form', on: { submit: onSubmit } }, input, button), out);
+  return h('div', { class: 'ask-panel' }, h('form', { class: 'ask-form', on: { submit: onSubmit } }, input, button), note, out);
 }
 
 // state: {} while loading, { error } or { nodes, truncated }. Shows the top 50 nodes by degree.

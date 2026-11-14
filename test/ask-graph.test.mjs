@@ -13,31 +13,32 @@ import { listAudit } from '../lib/audit.mjs';
 
 const EXE = '/fake/bin/graphify';
 
-// A child that emits its output on the next tick and then closes with code 0.
-function fakeSpawn(chunks, { calls = [], close = true } = {}) {
+// A child that emits its output on the next tick, then closes with `code` (unless close is false).
+// kill() flags the child and closes it on the next tick, as a real process would.
+function fakeSpawn(chunks, { calls = [], close = true, code = 0 } = {}) {
   return (exe, args, opts) => {
     const child = new EventEmitter();
     child.stdout = new EventEmitter();
     child.stderr = new EventEmitter();
     child.killed = false;
-    child.kill = () => { child.killed = true; };
+    child.kill = () => { child.killed = true; setImmediate(() => child.emit('close', null)); };
     calls.push({ exe, args, opts, child });
     setImmediate(() => {
       for (const c of chunks) child.stdout.emit('data', c);
-      if (close) child.emit('close', 0);
+      if (close) child.emit('close', code);
     });
     return child;
   };
 }
 
-function setup({ which = () => EXE, spawn = () => { throw new Error('spawn must not run'); }, timeoutMs, projects } = {}) {
+function setup({ which = () => EXE, spawn = () => { throw new Error('spawn must not run'); }, timeoutMs, projects, command = 'graphify' } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'ask-graph-'));
   const db = openDb(join(dir, 'overmap.db'));
   const home = join(dir, 'demo');
   const list = projects ?? [{ id: 'demo', name: 'Demo', home, graph: { value: { nodeCount: 3 } } }];
   const routes = createActionRoutes({
     getDb: () => db, getRegistry: () => new Map(), tokens: createTokens(), who: () => ({ class: 'laptop', login: '' }),
-    askGraph: { which, spawn, command: 'graphify', timeoutMs, readProjects: () => ({ projects: list }) },
+    askGraph: { which, spawn, command, timeoutMs, readProjects: () => ({ projects: list }) },
   });
   return { dir, db, home, routes };
 }
@@ -57,11 +58,17 @@ async function withServer(s, fn) {
     return { status: r.status, json: await r.json().catch(() => null) };
   };
   const csrf = async () => (await get('/api/csrf')).token;
-  try { await fn({ post, csrf }); } finally { server.closeAllConnections?.(); server.close(); }
+  try { await fn({ post, csrf, port }); } finally { server.closeAllConnections?.(); server.close(); }
 }
 
 const cleanup = (s) => { try { s.db.close(); } catch { /* closed */ } rmSync(s.dir, { recursive: true, force: true }); };
 const lastAudit = (s) => listAudit(s.db, { limit: 1 })[0];
+async function until(fn, ms = 2000) {
+  const end = Date.now() + ms;
+  while (Date.now() < end) { if (fn()) return; await new Promise((r) => setTimeout(r, 5)); }
+  throw new Error('condition not met in time');
+}
+const SHIM_MSG = 'graphify not found (.cmd/.bat shims are not supported; install an .exe)';
 
 test('ask-graph: 409 when graphify is missing, nothing spawned, audited refused', async () => {
   const s = setup({ which: () => null });
@@ -77,7 +84,33 @@ test('ask-graph: 409 when graphify is missing, nothing spawned, audited refused'
   } finally { cleanup(s); }
 });
 
-test('ask-graph: runs the command with argv and cwd, caps and masks output', async () => {
+test('ask-graph: a .cmd shim on PATH is refused with 409 and the shim message, nothing spawned', async () => {
+  const s = setup({ which: (cmd, o = {}) => (o.allowShims ? '/x/bin/graphify.cmd' : null) });
+  try {
+    await withServer(s, async ({ post, csrf }) => {
+      const r = await post({ id: 'demo', question: 'what is here?', csrf: await csrf() });
+      assert.equal(r.status, 409);
+      assert.deepEqual(r.json, { error: SHIM_MSG });
+      assert.equal(lastAudit(s).status, 'refused');
+    });
+  } finally { cleanup(s); }
+});
+
+test('ask-graph: an explicit .bat graphifyCommand is refused with 409 before any lookup', async () => {
+  const calls = [];
+  const s = setup({ command: 'graphify.bat', which: () => { calls.push('which'); return EXE; }, spawn: fakeSpawn([], { calls }) });
+  try {
+    await withServer(s, async ({ post, csrf }) => {
+      const r = await post({ id: 'demo', question: 'hi', csrf: await csrf() });
+      assert.equal(r.status, 409);
+      assert.deepEqual(r.json, { error: SHIM_MSG });
+      assert.deepEqual(calls, []);
+      assert.equal(lastAudit(s).status, 'refused');
+    });
+  } finally { cleanup(s); }
+});
+
+test('ask-graph: runs the command with argv and cwd, caps and masks output, kills the child at the cap', async () => {
   const calls = [];
   const big = 'x'.repeat(70 * 1024);
   const s = setup({ spawn: fakeSpawn([Buffer.from(`Answer. Bearer t0k3n-fixture-8731 ${big}`)], { calls }) });
@@ -86,6 +119,7 @@ test('ask-graph: runs the command with argv and cwd, caps and masks output', asy
       const r = await post({ id: 'demo', question: 'what is here?', csrf: await csrf() });
       assert.equal(r.status, 200);
       assert.equal(r.json.truncated, true);
+      assert.equal(r.json.exitCode, 0);
       assert.equal(typeof r.json.ms, 'number');
       assert.ok(Buffer.byteLength(r.json.answer) <= 64 * 1024);
       assert.ok(!r.json.answer.includes('t0k3n-fixture-8731'));
@@ -97,6 +131,7 @@ test('ask-graph: runs the command with argv and cwd, caps and masks output', asy
       assert.equal(calls[0].opts.shell, false);
       assert.deepEqual(calls[0].opts.stdio, ['ignore', 'pipe', 'pipe']);
       assert.equal(calls[0].opts.windowsHide, true);
+      assert.equal(calls[0].child.killed, true);
       const row = lastAudit(s);
       assert.equal(row.status, 'ok');
       assert.equal(row.project, 'demo');
@@ -104,7 +139,21 @@ test('ask-graph: runs the command with argv and cwd, caps and masks output', asy
   } finally { cleanup(s); }
 });
 
-test('ask-graph: rejects a bad question and an unknown or graphless project, nothing spawned', async () => {
+test('ask-graph: a non-zero exit answers 200 with exitCode and is audited failed', async () => {
+  const s = setup({ spawn: fakeSpawn([Buffer.from('partial')], { code: 3 }) });
+  try {
+    await withServer(s, async ({ post, csrf }) => {
+      const r = await post({ id: 'demo', question: 'hi', csrf: await csrf() });
+      assert.equal(r.status, 200);
+      assert.equal(r.json.exitCode, 3);
+      assert.equal(r.json.answer, 'partial');
+      assert.equal(lastAudit(s).status, 'failed');
+      assert.equal(lastAudit(s).result.exitCode, 3);
+    });
+  } finally { cleanup(s); }
+});
+
+test('ask-graph: rejects a bad question (including a leading dash) and an unknown or graphless project, nothing spawned', async () => {
   const calls = [];
   const s = setup({
     spawn: fakeSpawn([], { calls }),
@@ -113,7 +162,7 @@ test('ask-graph: rejects a bad question and an unknown or graphless project, not
   try {
     await withServer(s, async ({ post, csrf }) => {
       const token = await csrf();
-      for (const question of ['', 'a'.repeat(501), 'line one\nline two', 42]) {
+      for (const question of ['', 'a'.repeat(501), 'line one\nline two', 42, '-rf', '   --help']) {
         const r = await post({ id: 'demo', question, csrf: token });
         assert.equal(r.status, 400, JSON.stringify(question).slice(0, 20));
       }
@@ -125,7 +174,7 @@ test('ask-graph: rejects a bad question and an unknown or graphless project, not
       assert.equal(bare.status, 404);
       assert.deepEqual(bare.json, { error: 'no graph' });
       assert.equal(calls.length, 0);
-      assert.equal(listAudit(s.db, { limit: 10 }).every((row) => row.status === 'refused'), true);
+      assert.equal(listAudit(s.db, { limit: 20 }).every((row) => row.status === 'refused'), true);
     });
   } finally { cleanup(s); }
 });
@@ -152,8 +201,7 @@ test('ask-graph: a run past the timeout is killed, 504, audited failed', async (
       assert.equal(r.status, 504);
       assert.deepEqual(r.json, { error: 'timed out' });
       assert.equal(calls[0].child.killed, true);
-      const row = lastAudit(s);
-      assert.equal(row.status, 'failed');
+      assert.equal(lastAudit(s).status, 'failed');
     });
   } finally { cleanup(s); }
 });
@@ -174,6 +222,46 @@ test('ask-graph: a spawn error is audited failed and answers 500', async () => {
       assert.equal(r.status, 500);
       assert.match(r.json.error, /EACCES/);
       assert.equal(lastAudit(s).status, 'failed');
+    });
+  } finally { cleanup(s); }
+});
+
+test('ask-graph: a third concurrent run is refused with 429 busy', async () => {
+  const calls = [];
+  const s = setup({ spawn: fakeSpawn([], { calls, close: false }) });
+  try {
+    await withServer(s, async ({ post, csrf }) => {
+      const token = await csrf();
+      const first = post({ id: 'demo', question: 'one', csrf: token });
+      const second = post({ id: 'demo', question: 'two', csrf: token });
+      await until(() => calls.length === 2);
+      const third = await post({ id: 'demo', question: 'three', csrf: token });
+      assert.equal(third.status, 429);
+      assert.deepEqual(third.json, { error: 'busy' });
+      assert.equal(lastAudit(s).status, 'refused');
+      assert.equal(calls.length, 2);
+      for (const c of calls) c.child.kill();
+      assert.equal((await first).status, 200);
+      assert.equal((await second).status, 200);
+    });
+  } finally { cleanup(s); }
+});
+
+test('ask-graph: a client that disconnects kills the child and is audited failed', async () => {
+  const calls = [];
+  const s = setup({ spawn: fakeSpawn([], { calls, close: false }) });
+  try {
+    await withServer(s, async ({ port, csrf }) => {
+      const body = JSON.stringify({ id: 'demo', question: 'slow?', csrf: await csrf() });
+      const rq = http.request({ host: '127.0.0.1', port, path: '/api/actions/ask-graph', method: 'POST', headers: {
+        origin: `http://127.0.0.1:${port}`, 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) } });
+      rq.on('error', () => {});
+      rq.end(body);
+      await until(() => calls.length === 1);
+      rq.destroy();
+      await until(() => calls[0].child.killed);
+      await until(() => lastAudit(s)?.status === 'failed');
+      assert.equal(lastAudit(s).result.error, 'client closed');
     });
   } finally { cleanup(s); }
 });

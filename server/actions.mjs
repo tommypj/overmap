@@ -10,35 +10,47 @@ import { spawn as realSpawn } from 'node:child_process';
 const ASK_MAX = 500; // characters in a question
 const ASK_CAP = 64 * 1024; // bytes of graphify output kept, stdout and stderr together
 const ASK_TIMEOUT_MS = 60_000;
+const ASK_INFLIGHT = 2; // graphify runs at once, across all clients
 const CONTROL = /[\u0000-\u001f\u007f]/;
+const SHIM = /\.(cmd|bat)$/i;
+const SHIM_MSG = 'graphify not found (.cmd/.bat shims are not supported; install an .exe)';
 
 class TimedOut extends Error {}
+class ClientClosed extends Error {}
 
-// Runs `<exe> query <question>` in cwd and resolves with the output up to ASK_CAP. Rejects on spawn error or timeout.
+// Runs `<exe> query <question>` in cwd. Resolves { text, truncated, exitCode, killedAtCap }. Rejects on spawn error,
+// timeout or abort(). The child is killed when the output cap is reached, on timeout, and on abort.
 function runGraph({ spawn, exe, question, cwd, timeoutMs }) {
-  return new Promise((resolve, reject) => {
+  let abortNow = () => {};
+  const promise = new Promise((resolve, reject) => {
     let child;
     try { child = spawn(exe, ['query', question], { cwd, shell: false, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true }); } catch (err) { reject(err); return; }
     const chunks = [];
     let size = 0;
     let truncated = false;
+    let killedAtCap = false;
     let settled = false;
     let timer = null;
-    const settle = (fn, v) => { if (settled) return; settled = true; clearTimeout(timer); fn(v); };
-    timer = setTimeout(() => {
-      try { child.kill(); } catch { /* already gone */ }
-      settle(reject, new TimedOut('timed out'));
-    }, timeoutMs);
+    const kill = () => { try { child.kill(); } catch { /* already gone */ } };
+    const finish = (fn, v) => { if (settled) return; settled = true; clearTimeout(timer); fn(v); };
+    timer = setTimeout(() => { kill(); finish(reject, new TimedOut('timed out')); }, timeoutMs);
+    abortNow = () => { if (settled) return; kill(); finish(reject, new ClientClosed('client closed')); };
     const onData = (chunk) => {
       const buf = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk));
       const room = ASK_CAP - size;
-      if (buf.length > room) { truncated = true; if (room > 0) chunks.push(buf.subarray(0, room)); size = ASK_CAP; } else { chunks.push(buf); size += buf.length; }
+      if (buf.length > room) {
+        if (room > 0) chunks.push(buf.subarray(0, room));
+        size = ASK_CAP;
+        truncated = true;
+        if (!killedAtCap) { killedAtCap = true; kill(); }
+      } else { chunks.push(buf); size += buf.length; }
     };
     child.stdout.on('data', onData);
     child.stderr.on('data', onData);
-    child.on('error', (err) => settle(reject, err));
-    child.on('close', () => settle(resolve, { text: Buffer.concat(chunks).toString('utf8'), truncated }));
+    child.on('error', (err) => finish(reject, err));
+    child.on('close', (code) => finish(resolve, { text: Buffer.concat(chunks).toString('utf8'), truncated, exitCode: code ?? null, killedAtCap }));
   });
+  return { promise, abort: () => abortNow() };
 }
 
 // A refusal: ends the request with this status and is audited as `refused`.
@@ -52,6 +64,7 @@ export function createActionRoutes({
   askGraph = {},
 }) {
   const { which: findExe = realWhich, spawn = realSpawn, command = 'graphify', readProjects = () => ({ projects: [] }), timeoutMs = ASK_TIMEOUT_MS } = askGraph;
+  let askInFlight = 0;
   function audit(w, action, project, args, status, result, started) {
     try {
       recordAction(getDb(), { at: new Date(now()).toISOString(), who: `${w.class}:${w.login ?? ''}`, action, project, args, status, result, durationMs: now() - started });
@@ -123,17 +136,29 @@ export function createActionRoutes({
   // Ask a project's knowledge graph: `graphify query <question>` in the project home. Nothing spawns before every check passes.
   const askGraphRoute = (req, res, body) => guarded(req, res, body, 'ask-graph', async ({ done }) => {
     const q = body?.question;
-    if (typeof q !== 'string' || q.length < 1 || q.length > ASK_MAX || CONTROL.test(q)) throw new Refuse(400, 'bad question');
+    if (typeof q !== 'string' || q.length < 1 || q.length > ASK_MAX || CONTROL.test(q) || q.trimStart().startsWith('-')) throw new Refuse(400, 'bad question');
     let projects = [];
     try { projects = readProjects()?.projects ?? []; } catch { projects = []; }
     const p = projects.find((x) => x.id === body?.id);
     if (!p) throw new Refuse(404, 'unknown project');
     if (!p.home || !p.graph?.value) throw new Refuse(404, 'no graph');
+    if (SHIM.test(command)) throw new Refuse(409, { error: SHIM_MSG });
     const exe = findExe(command);
-    if (!exe) throw new Refuse(409, { error: 'graphify not found' });
+    if (!exe) {
+      if (findExe(command, { allowShims: true })) throw new Refuse(409, { error: SHIM_MSG });
+      throw new Refuse(409, { error: 'graphify not found' });
+    }
+    if (SHIM.test(exe)) throw new Refuse(409, { error: SHIM_MSG });
+    if (askInFlight >= ASK_INFLIGHT) throw new Refuse(429, { error: 'busy' });
+    askInFlight += 1;
     const started = now();
     let out;
-    try { out = await runGraph({ spawn, exe, question: q, cwd: p.home, timeoutMs }); } catch (err) {
+    try {
+      const job = runGraph({ spawn, exe, question: q, cwd: p.home, timeoutMs });
+      res.on('close', () => { if (!res.writableEnded) job.abort(); });
+      out = await job.promise;
+    } catch (err) {
+      if (err instanceof ClientClosed) { done('failed', { error: 'client closed' }); return; }
       if (err instanceof TimedOut) {
         done('failed', { error: 'timed out' });
         sendJson(req, res, 504, { error: 'timed out' });
@@ -143,11 +168,12 @@ export function createActionRoutes({
       done('failed', { error: msg });
       sendJson(req, res, 500, { error: msg });
       return;
-    }
+    } finally { askInFlight -= 1; }
     const ms = now() - started;
     const answer = maskSecrets(out.text);
-    done('ok', { ms, truncated: out.truncated });
-    sendJson(req, res, 200, { answer, truncated: out.truncated, ms });
+    const ok = out.exitCode === 0 || out.killedAtCap; // we stopped it at the cap: the answer is complete enough to show
+    done(ok ? 'ok' : 'failed', { ms, truncated: out.truncated, exitCode: out.exitCode });
+    sendJson(req, res, 200, { answer, truncated: out.truncated, ms, exitCode: out.exitCode });
   });
 
   async function handler({ req, res, url, path, body }) {
