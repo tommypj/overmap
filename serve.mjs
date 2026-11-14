@@ -199,7 +199,7 @@ export function startServer({ home = resolveHome(), env = process.env, onError, 
   // port 0 asks the OS for a free port; the ready line and the Host check use the port actually bound.
   server.listen(port, '127.0.0.1', () => {
     config.port = server.address().port;
-    console.log(`dashboard on http://127.0.0.1:${config.port}`);
+    console.log(`overmap on http://127.0.0.1:${config.port}`);
   });
   if (!noSchedule && connectors) {
     const cs = startConnectors(config, { secret: secrets.getSecret });

@@ -28,7 +28,7 @@ export function buildConsentUrl({ clientId, port, state }) {
 
 export const openCommand = (url) => ['rundll32', ['url.dll,FileProtocolHandler', url]];
 
-const page = (msg) => `<!doctype html><meta charset="utf-8"><title>Cockpit</title><p>${msg}</p>`;
+const page = (msg) => `<!doctype html><meta charset="utf-8"><title>Overmap</title><p>${msg}</p>`;
 
 async function main(argv) {
   if (argv.includes('--dry-run')) {

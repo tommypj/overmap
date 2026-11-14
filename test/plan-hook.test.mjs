@@ -58,7 +58,7 @@ test('modified file 1 h ago: fresh plan allows, 5 h old plan blocks with hours a
   assert.equal(r.decision, 'block');
   assert.ok(r.reason.includes('5 h ago'));
   assert.ok(r.reason.includes('PLAN.md'));
-  assert.ok(r.reason.includes('Format: README.md in Overmap, section "The Stop hook".'));
+  assert.ok(r.reason.includes('Format: docs/hook.md in Overmap, section "PLAN.md".'));
 });
 
 test('recent commit: plan older than the commit by more than the grace blocks, newer allows', () => {
@@ -105,7 +105,7 @@ test('worktree plan newer than the home plan allows (real worktree root with a .
 test('no plan file blocks with the no-plan reason naming the home', () => {
   const r = run('/zz/a', { g: { dirty: true }, planAgo: null });
   assert.equal(r.decision, 'block');
-  assert.equal(r.reason, 'Alpha has no plan file. Create PLAN.md in /zz/a (format: README.md in Overmap, section "The Stop hook") or a checkbox plan under docs/superpowers/plans/, then stop again.');
+  assert.equal(r.reason, 'Alpha has no plan file. Create PLAN.md in /zz/a (format: docs/hook.md in Overmap, section "PLAN.md") or a checkbox plan under docs/superpowers/plans/, then stop again.');
 });
 
 test('no repos to inspect allows', () => {

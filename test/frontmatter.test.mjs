@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { parseFrontmatter, serializeFrontmatter } from '../lib/frontmatter.mjs';
 
@@ -39,4 +39,11 @@ test('the frontmatter template in docs/notes.md parses as a project note', () =>
   assert.equal(data.type, 'project');
   assert.equal(data.dashboard, true);
   assert.equal(data.path, '~/code/my-app');
+  assert.equal(data.summary, 'Online shop for the spring range');
+});
+
+test('public docs carry no YAML frontmatter (they are not vault notes)', () => {
+  const root = new URL('..', import.meta.url);
+  const docs = ['README.md', 'SECURITY.md', 'CONTRIBUTING.md', ...readdirSync(new URL('docs/', root)).filter((f) => f.endsWith('.md')).map((f) => `docs/${f}`)];
+  for (const f of docs) assert.ok(!readFileSync(new URL(f, root), 'utf8').startsWith('---'), f);
 });

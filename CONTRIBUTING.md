@@ -1,10 +1,3 @@
----
-type: doc
-status: active
-tags: [overmap]
-relatedTo: []
----
-
 # Contributing
 
 Thanks for looking. Overmap is a small tool with a few hard rules. Read these before you open a change.

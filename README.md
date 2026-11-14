@@ -1,10 +1,3 @@
----
-type: doc
-status: active
-tags: [overmap]
-relatedTo: []
----
-
 # Overmap
 
 Overmap is a map of every project you build with Claude Code: which folder it lives in, what it deploys to, what shares a service with what, what is half-done, and what inside a project talks to what. Projects are clustered by group, shared services are hubs, and zooming into a project shows its Graphify communities. Facts come from git, `PLAN.md`, `test-results.json` and a few connectors; the registry is your Obsidian notes.

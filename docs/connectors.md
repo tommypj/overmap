@@ -1,10 +1,3 @@
----
-type: doc
-status: active
-tags: [overmap, connectors]
-relatedTo: []
----
-
 # Connectors
 
 A connector reads one service for one project and records what it finds as facts, daily series and events. The six in `connectors/` are worked examples: they show the pattern, and they are not a promise to support any particular service.

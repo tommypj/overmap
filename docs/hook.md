@@ -1,10 +1,3 @@
----
-type: doc
-status: active
-tags: [overmap, stop-hook, plan]
-relatedTo: []
----
-
 # The Stop hook, plans and test results
 
 ## What the hook does

@@ -68,7 +68,7 @@ test('serve --sample answers /api/projects on the port it binds, and kills its c
         stdout += c;
         const dir = stdout.match(/sample workspace in (.+)/);
         if (dir) sampleDir = dir[1].trim();
-        const m = stdout.match(/dashboard on (http:\/\/127\.0\.0\.1:\d+)/);
+        const m = stdout.match(/overmap on (http:\/\/127\.0\.0\.1:\d+)/);
         if (m) { clearTimeout(timer); resolveUrl(m[1]); }
       });
       child.on('exit', (code) => { clearTimeout(timer); reject(new Error(`exited ${code}; stderr: ${stderr}`)); });

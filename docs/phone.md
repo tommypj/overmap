@@ -1,10 +1,3 @@
----
-type: doc
-status: active
-tags: [overmap, phone, tailscale]
-relatedTo: []
----
-
 # Phone access
 
 Overmap listens on `127.0.0.1` and nothing else. By default only the machine it runs on can open it. To use it from a phone, put a reverse proxy in front of it that sends your identity, and let the server accept requests that come through that proxy.

@@ -7,3 +7,7 @@ node_modules/
 .base/
 .base-ast/
 .base-ast-cache/
+secrets.json
+registry*.json
+overmap.config.json
+data/

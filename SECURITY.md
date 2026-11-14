@@ -1,10 +1,3 @@
----
-type: doc
-status: active
-tags: [overmap]
-relatedTo: []
----
-
 # Security
 
 ## Reporting a problem
@@ -18,7 +11,7 @@ Please do not open a public issue for a security problem. Message the maintainer
 - **POST actions** need a CSRF token and a matching origin. Each one is written to the audit log.
 - **Secrets** live in `secrets.json`, which Overmap reads only when the file is protected from other users (see [docs/connectors.md](docs/connectors.md)). Values are masked in logs, errors and API responses.
 - **Ask the graph** runs `graphify query` with arguments passed directly (no shell), in the project folder, with a 60-second limit. A question is refused when it is empty or longer than 500 characters, when it contains a control character, or when it starts with `-` after leading spaces are trimmed.
-- **Files** are read only from registered folders, with path containment and a size cap.
+- **Files** are read only from registered folders, with path containment. A file is streamed whatever its size.
 
 ## Out of scope
 

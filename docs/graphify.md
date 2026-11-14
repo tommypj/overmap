@@ -1,10 +1,3 @@
----
-type: doc
-status: active
-tags: [overmap, graphify]
-relatedTo: []
----
-
 # Graphify
 
 Graphify turns a folder of code, notes and documents into a knowledge graph: communities of related files and symbols, and the links between them. Overmap shows that graph on the map, so you can zoom into a project and see its parts without opening the code.

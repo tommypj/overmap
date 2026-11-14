@@ -1,10 +1,3 @@
----
-type: doc
-status: active
-tags: [overmap]
-relatedTo: []
----
-
 # Project notes
 
 Overmap's registry is your notes. Each project is one Markdown note in the folder named by `vaultProjectsDir` (in `overmap.config.json`), usually an Obsidian vault folder. `make-registry.mjs` reads those notes and writes `registry.json` in your instance folder; `scan.mjs` then reads the registry on every scan.
@@ -16,6 +9,7 @@ Overmap's registry is your notes. Each project is one Markdown note in the folde
 type: project
 dashboard: true
 name: My App
+summary: Online shop for the spring range
 status: active
 group: Client X
 path: ~/code/my-app
@@ -31,8 +25,9 @@ links: [https://my-app.example/docs]
 | --- | --- | --- |
 | `type` | yes | must be `project` |
 | `dashboard` | yes | must be `true`, otherwise the note is ignored |
-| `path` | yes | the project's home folder; `~` is expanded |
+| `path` | yes | the project's home folder: an absolute path, or one starting with `~` (expanded); a relative path is not resolved against the vault |
 | `name` | no | defaults to the file name |
+| `summary` | no | one line about the project, shown on its page and as the tooltip in the project list |
 | `status` | no | shown as written; use `active`, `paused`, `archived` or `terminated` |
 | `group` | no | the cluster the project sits in on the map |
 | `repos` | no | more repos or worktrees |
@@ -105,4 +100,4 @@ connects: [storefront]
 - [ ] 2026-11-10 — payment webhook still returns 500 on retries
 ```
 
-Overmap's sample workspace in `examples/sample/notes/` has five of these notes to copy from.
+Overmap's sample workspace in `examples/sample/notes/` has six of these notes to copy from.
